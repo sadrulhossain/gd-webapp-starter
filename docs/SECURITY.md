@@ -62,3 +62,22 @@ Next 16.4.5 and later (3 Nov 2026 release) and PHP 8.5.12 (21 Oct 2026, PHP2Shel
 - Speed fix: `not-found.tsx` read `headers()`, which made every locale route dynamic (no ISR, about 500 ms server time). It now takes the locale from the URL, so Home, About, Services, Contact, FAQ, Gallery, Privacy,
   Terms and the post and service detail pages are built once and revalidated hourly or by the tag webhook. The blog index stays dynamic (it reads `?page` and `?category`); its API reads are still cached.
   A production build needs the API reachable at build time.
+
+## Review of the starter phases W1 to W8
+
+Reviewed on branch `feature/phase-w8-hardening-release`. The findings above that mention the portal, MariaDB or the contact form describe the inherited business site and no longer apply to this repository.
+
+| # | Area | Finding | Severity | Status | Where |
+|---|------|---------|----------|--------|-------|
+| W1 | Rate limits | Only the login route was throttled; every signed-in and public API call was unlimited | Medium | fixed: `throttle:api` (300/min per account) on the signed-in group, `throttle:public` (60/min per address) on anonymous reads. Health stays outside the limits so monitors cannot lock themselves out | `AppServiceProvider`, `routes/api.php`, `ThrottleTest` |
+| W2 | Privilege escalation | Granting roles or permissions you do not hold | High if present | verified: a role editor can only grant permissions they hold, a user editor only roles whose permissions they all hold, the superadmin role is never assignable; permissions you lack stay as they are on edit | `GrantablePermissions`, `AssignableRoles`, `RolesTest`, `UsersTest` |
+| W3 | Superadmin | Delete, suspend or edit of the last or any superadmin | High if present | verified: one `Gate::before`, with `delete` and `suspend` refused even for superadmins; the last active superadmin is protected | `AppServiceProvider`, `UserPolicy`, `UsersTest` |
+| W4 | Menus | A custom menu entry could point at an external or script URL, or at a permission its creator lacks | Medium | fixed at write time: path must match `^/[A-Za-z0-9/_-]*$`, a link needs a declared, unused permission the creator holds. Visibility is a convenience: the API enforces access | `StoreMenuRequest`, `MenuAdminTest` |
+| W5 | Secrets in settings | A secret setting could leak through the API, the public endpoint or the audit log | High if present | verified: encrypted at rest, never returned (`secrets_set` only says whether one exists), never public, redacted in audit entries | `Settings`, `Setting::auditRedacted`, `SettingsTest`, `AuditLogTest` |
+| W6 | Audit log | A log that can be edited or purged proves nothing | High | verified: append-only in the model and by a PostgreSQL trigger that rejects UPDATE and DELETE; passwords and tokens are stored as `[redacted]`; reading needs `audit.view` | `AuditLog`, migration `create_audit_logs_table`, `AuditLogTest` |
+| W7 | Audit coverage | Role changes, user role changes, session revocation and menu reorder bypass model events | Medium | fixed: logged explicitly through `Audit::record`. Sign-in and sign-out are not logged | `RoleController`, `UserController`, `UserSessionController`, `MenuController` |
+| W8 | Cached data across accounts | The admin kept menus and lists in memory after a sign-out, so the next account on the same tab could see them | Medium | fixed: every cached query is dropped when the session ends; the menu cache is keyed by user | `web/admin/src/queryClient.ts` |
+| W9 | Audit retention | The log grows without bound | Low | accepted: there is no purge by design. Plan disk for it; archive by dumping the table | DEPLOY.md |
+| W10 | Menu options need `roles.view` | The permission list used by the menu form is gated by `roles.view` | Info | accepted: a menu editor without `roles.view` sees an empty permission dropdown | `PermissionController` |
+
+Gates run for this review: `composer audit`, `pnpm audit`, `php artisan security:routes`, `sh scripts/check-secrets.sh`, `node scripts/check-floors.mjs` (results in the phase summary).

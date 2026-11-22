@@ -1,6 +1,6 @@
 # Upgrade
 
-Two kinds of upgrade: **your site to a newer release of this boilerplate**, and **the pinned software** (PHP, Node, nginx, MariaDB, packages). Both end the same way: back up, deploy, check.
+Two kinds of upgrade: **your site to a newer release of this boilerplate**, and **the pinned software** (PHP, Node, nginx, PostgreSQL, packages). Both end the same way: back up, deploy, check.
 
 ## Before every upgrade
 
@@ -13,21 +13,20 @@ Two kinds of upgrade: **your site to a newer release of this boilerplate**, and 
 ```sh
 cd /opt/site
 git fetch --tags
-git checkout v1.1.0                      # the new tag
-# set IMAGE_ID in .env.prod to the new version (it makes the portal rebuild once)
+git checkout <new-tag>  # the new tag
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build --wait
 ```
 
-What happens: the images are rebuilt, the php container runs `migrate --force` before it reports healthy, the portal rebuilds its site on first start of the new image, nginx rebuilds the admin.
-A few minutes of the portal answering with errors is normal while it rebuilds; nginx and the API stay up. Pages are served again once `portal` is `healthy`.
+What happens: the images are rebuilt, the php container runs `migrate --force` before it reports healthy, nginx rebuilds the admin.
 
-Then run what the changelog asks for, typically new seeders (they only add missing rows):
+Then sync permissions and run what the changelog asks for, typically new seeders (they only add missing rows):
 
 ```sh
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec php php artisan permissions:sync
 docker compose -f docker-compose.prod.yml --env-file .env.prod exec php php artisan db:seed --class=<NewModuleSeeder> --force
 ```
 
-Finish with the checks from DEPLOY.md step 5, sign in to the admin, open the portal in both languages and send a test contact message.
+Finish with the checks from DEPLOY.md step 5, sign in to the admin and open the Audit log: your own sign-in changes should appear as soon as you edit something.
 
 ## Upgrade pinned software
 
@@ -37,13 +36,13 @@ The single source of truth is [VERSIONS.md](VERSIONS.md): a **pin** (what we bui
 2. Change the pin in `docs/VERSIONS.md` (with source and date), then in `.env.example`, `.env.prod.example` (and your `.env` / `.env.prod`) for images, or in `composer.json` / `package.json` / `pnpm-workspace.yaml` for packages. Pins in package files are exact, no ranges.
 3. `docker compose exec php composer update <package>` or `pnpm up <package>@<version>`; commit the lock file.
 4. The README checks (Pest, Pint, Larastan, composer audit, security gates) and the Playwright suites. Fix what breaks before merging.
-5. Deploy as above. Image pins (PHP, Node, nginx, MariaDB) rebuild or pull new images on `up -d --build`.
+5. Deploy as above. Image pins (PHP, Node, nginx, PostgreSQL) rebuild or pull new images on `up -d --build`.
 
 Notes per component:
 
-- **MariaDB**: stay on the LTS line (11.8). Minor updates are safe (`MARIADB_AUTO_UPGRADE=1` upgrades the system tables). A major jump: take a backup, test the restore on a spare server first.
+- **PostgreSQL**: minor updates are safe (pull the new image). A major jump (18 to 19) needs a dump and restore into a fresh volume: take a backup and test the restore on a spare server first.
 - **PHP**: the pin is the patch release; rebuild the image. Read the release notes for removed ini settings (`docker/php/security.ini`).
-- **Node / Next.js**: rebuilds the portal image; the portal rebuilds its site on start. Keep `pnpm audit` clean and re-run the axe and smoke specs.
+- **Node / Vite**: rebuilds the admin in the nginx image. Keep `pnpm audit` clean and run the Vitest suite.
 - **nginx**: re-run `nginx -t` (the compose healthcheck fails if the config does not load).
 - Run `docker run aquasec/trivy image <image>` on the new images when you want the scan of record (see SECURITY.md for how results are recorded).
 
@@ -52,7 +51,7 @@ Notes per component:
 If the new version misbehaves:
 
 ```sh
-git checkout v1.0.0                      # the previous tag; restore IMAGE_ID in .env.prod
+git checkout <previous-tag>  # the previous tag
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build --wait
 ```
 
@@ -66,5 +65,5 @@ Migrations in this boilerplate are written to be additive, but a restore is the 
 
 ## Updating the boilerplate itself in a fork
 
-Add the original repository as `upstream`, then `git fetch upstream --tags` and merge a tag (`git merge v1.1.0`). Conflicts are most likely in `docs/`, `packages/tokens/*.css`, `web/portal/messages/*.json` and `DatabaseSeeder.php`.
+Add the original repository as `upstream`, then `git fetch upstream --tags` and merge a tag (`git merge <tag>`). Conflicts are most likely in `docs/`, `packages/tokens/*.css`, `config/permissions.php`, `routes/api.php` and `DatabaseSeeder.php` (the `// <make:module ...>` markers are where your modules go).
 Keep your customisations in the files [CUSTOMIZE.md](CUSTOMIZE.md) names, and avoid editing shared code unless you must; that keeps merges small.

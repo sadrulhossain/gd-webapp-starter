@@ -22,11 +22,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('health', HealthController::class);
-    Route::get('meta/locales', LocalesController::class);
-    Route::get('public/settings', [SettingController::class, 'publicShow']);
+    Route::middleware('throttle:public')->group(function (): void {
+        Route::get('meta/locales', LocalesController::class);
+        Route::get('public/settings', [SettingController::class, 'publicShow']);
+    });
 
     // Authenticated routes. Module routes add ->middleware('can:<permission>').
-    Route::middleware(['auth:api', EnsureUserIsActive::class])->group(function (): void {
+    Route::middleware(['auth:api', EnsureUserIsActive::class, 'throttle:api'])->group(function (): void {
         Route::get('me', MeController::class);
         Route::get('me/menus', MeMenusController::class);
         Route::patch('me', [ProfileController::class, 'update']);
