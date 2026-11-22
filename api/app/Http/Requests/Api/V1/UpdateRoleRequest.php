@@ -16,7 +16,7 @@ class UpdateRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'required', 'string', 'max:60', 'regex:/^[a-z0-9_-]+$/', Rule::unique('roles', 'name')->where('guard_name', 'api')->ignore($this->route('role')), Rule::notIn([config('access.superadmin_role')])],
+            'name' => [Rule::prohibitedIf(in_array($this->route('role')?->name, config('permissions.system_roles'), true)), 'sometimes', 'required', 'string', 'max:60', 'regex:/^[a-z0-9_-]+$/', Rule::unique('roles', 'name')->where('guard_name', 'api')->ignore($this->route('role')), Rule::notIn([config('access.superadmin_role')])],
             ...GrantablePermissions::rules($this->user()),
         ];
     }

@@ -33,7 +33,7 @@ Each phase has its own branch `feature/phase-<no>-<task-name>`, merged manually 
 |------|---|-------|--------|
 | [x] | W0 | Fork from main, PostgreSQL swap, trim to API and admin, green suite | `feature/phase-w0-fork-postgresql-swap-trim` |
 | [x] | W1 | Users API: accounts, profile, password, status, sessions | `feature/phase-w1-users-api` |
-| [ ] | W2 | Roles and permissions API | `feature/phase-w2-roles-permissions-api` |
+| [x] | W2 | Roles and permissions API | `feature/phase-w2-roles-permissions-api` |
 | [ ] | W3 | Menus API | `feature/phase-w3-menus-api` |
 | [ ] | W4 | Settings API | `feature/phase-w4-settings-api` |
 | [ ] | W5 | Audit log and module scaffold | `feature/phase-w5-audit-log-module-scaffold` |

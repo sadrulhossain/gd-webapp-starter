@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\AssignableRoles;
 use App\Http\Requests\Api\V1\StoreUserRequest;
 use App\Http\Requests\Api\V1\UpdateUserRequest;
 use App\Http\Resources\Api\V1\UserResource;
@@ -46,7 +47,7 @@ class UserController extends Controller
     /**
      * Update a user
      *
-     * A blank password keeps the current one. `roles` replaces the user's roles (the superadmin role is never touched here).
+     * A blank password keeps the current one. `roles` replaces the user's roles (roles you may not assign, such as the superadmin role, are kept as they are); a new password signs the user out everywhere.
      */
     public function update(UpdateUserRequest $request, User $user): UserResource
     {
@@ -64,7 +65,8 @@ class UserController extends Controller
         }
 
         if (array_key_exists('roles', $data)) {
-            $keep = $user->isSuperadmin() ? [config('access.superadmin_role')] : [];
+            // Roles the actor may not assign (the superadmin role, roles above their own permissions) stay as they are.
+            $keep = $user->roles->pluck('name')->diff(AssignableRoles::names($request->user()))->all();
             $user->syncRoles([...$data['roles'], ...$keep]);
         }
 

@@ -19,8 +19,7 @@ class UpdateUserRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:120'],
             'email' => ['sometimes', 'required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
             'password' => ['sometimes', 'nullable', 'string', 'min:12', 'max:255'],
-            'roles' => ['sometimes', 'array'],
-            'roles.*' => ['string', Rule::exists('roles', 'name')->where('guard_name', 'api')->whereNot('name', config('access.superadmin_role'))],
+            ...AssignableRoles::rules($this->user()),
         ];
     }
 }

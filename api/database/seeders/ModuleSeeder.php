@@ -3,14 +3,13 @@
 namespace Database\Seeders;
 
 use App\Models\Menu;
+use App\Support\PermissionCatalog;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Base class for module seeders. Every module seeds its own permissions,
- * menu rows and role grants; register it in DatabaseSeeder.
+ * Base class for module seeders. Permissions and default role grants are declared in
+ * config/permissions.php (applied here through `permissions:sync`); a module seeder adds
+ * its menu rows. Register it in DatabaseSeeder.
  *
  * Menu node: ['title' => string, 'permission' => ?string, 'path' => ?string,
  *             'icon' => ?string, 'sort' => ?int, 'children' => list<node>]
@@ -18,40 +17,16 @@ use Spatie\Permission\PermissionRegistrar;
  */
 abstract class ModuleSeeder extends Seeder
 {
-    public const GUARD = 'api';
-
-    /** @return list<string> */
-    abstract protected function permissions(): array;
+    public const GUARD = PermissionCatalog::GUARD;
 
     /** @return list<array<string, mixed>> */
     abstract protected function menus(): array;
 
-    /**
-     * Role name => permissions granted to it (additive, never revokes).
-     *
-     * @return array<string, list<string>>
-     */
-    protected function grants(): array
-    {
-        return [];
-    }
-
     public function run(): void
     {
-        foreach ($this->permissions() as $name) {
-            Permission::findOrCreate($name, self::GUARD);
-        }
+        PermissionCatalog::sync();
 
         $this->seedMenus($this->menus(), null);
-
-        // Permissions were just created: drop the cached list so givePermissionTo() can find them.
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-        foreach ($this->grants() as $role => $permissions) {
-            Role::findOrCreate($role, self::GUARD)->givePermissionTo($permissions);
-        }
-
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     /** @param  list<array<string, mixed>>  $nodes */
