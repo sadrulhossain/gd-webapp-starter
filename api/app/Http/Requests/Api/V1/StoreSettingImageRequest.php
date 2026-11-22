@@ -11,7 +11,7 @@ class StoreSettingImageRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('update', Setting::current()) ?? false;
+        return $this->user()?->can('update', Setting::class) ?? false;
     }
 
     /** @return array<string, mixed> */

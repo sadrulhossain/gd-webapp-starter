@@ -2,8 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Setting;
-
+/** Defaults live in config/settings.php and are read until a setting is edited, so there is nothing to seed but the menu. */
 class SettingsModuleSeeder extends ModuleSeeder
 {
     protected function menus(): array
@@ -13,12 +12,5 @@ class SettingsModuleSeeder extends ModuleSeeder
                 ['title' => 'Settings', 'permission' => 'settings.view', 'path' => '/settings', 'icon' => 'settings', 'sort' => 40],
             ]],
         ];
-    }
-
-    public function run(): void
-    {
-        parent::run();
-
-        Setting::current(); // creates the default row once; never overwrites edits
     }
 }
