@@ -14,6 +14,11 @@ final class Settings
         return config('settings.settings');
     }
 
+    public static function isSecret(string $key): bool
+    {
+        return (self::definitions()[$key]['type'] ?? null) === 'secret';
+    }
+
     /** One value; a secret comes back decrypted (server-side use only, never in an API response). */
     public static function get(string $key): mixed
     {
@@ -58,7 +63,7 @@ final class Settings
     {
         foreach (array_intersect_key($values, self::definitions()) as $key => $value) {
             if ($value === null || $value === '') {
-                Setting::query()->whereKey($key)->delete();
+                Setting::query()->find($key)?->delete(); // through the model, so the change is audited
 
                 continue;
             }

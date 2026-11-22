@@ -1,0 +1,54 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Store{{Model}}Request;
+use App\Http\Requests\Api\V1\Update{{Model}}Request;
+use App\Http\Resources\Api\V1\{{Model}}Resource;
+use App\Models\{{Model}};
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
+
+class {{Model}}Controller extends Controller
+{
+    /** List {{Title}} */
+    public function index(): AnonymousResourceCollection
+    {
+        Gate::authorize('viewAny', {{Model}}::class);
+
+        return {{Model}}Resource::collection({{Model}}::query()->orderBy('id')->paginate(15));
+    }
+
+    /** Show a {{Singular}} */
+    public function show({{Model}} ${{model}}): {{Model}}Resource
+    {
+        Gate::authorize('view', ${{model}});
+
+        return new {{Model}}Resource(${{model}});
+    }
+
+    /** Create a {{Singular}} */
+    public function store(Store{{Model}}Request $request): {{Model}}Resource
+    {
+        return new {{Model}}Resource({{Model}}::query()->create($request->validated()));
+    }
+
+    /** Update a {{Singular}} */
+    public function update(Update{{Model}}Request $request, {{Model}} ${{model}}): {{Model}}Resource
+    {
+        ${{model}}->update($request->validated());
+
+        return new {{Model}}Resource(${{model}});
+    }
+
+    /** Delete a {{Singular}} */
+    public function destroy({{Model}} ${{model}}): Response
+    {
+        Gate::authorize('delete', ${{model}});
+        ${{model}}->delete();
+
+        return response()->noContent();
+    }
+}

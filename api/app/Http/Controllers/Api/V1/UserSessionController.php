@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
@@ -27,6 +28,7 @@ class UserSessionController extends Controller
     {
         Gate::authorize('manageSessions', $user);
         $user->revokeSessions();
+        Audit::record('sessions_revoked', $user);
 
         return response()->noContent();
     }

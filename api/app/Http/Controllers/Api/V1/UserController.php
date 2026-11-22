@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\StoreUserRequest;
 use App\Http\Requests\Api\V1\UpdateUserRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
@@ -40,6 +41,7 @@ class UserController extends Controller
         $data = $request->validated();
         $user = User::query()->create(collect($data)->only(['name', 'email', 'password'])->all());
         $user->syncRoles($data['roles'] ?? []);
+        Audit::record('roles_changed', $user, [], ['roles' => $user->roles->pluck('name')->sort()->values()->all()]);
 
         return new UserResource($user->load('roles'));
     }
@@ -67,7 +69,13 @@ class UserController extends Controller
         if (array_key_exists('roles', $data)) {
             // Roles the actor may not assign (the superadmin role, roles above their own permissions) stay as they are.
             $keep = $user->roles->pluck('name')->diff(AssignableRoles::names($request->user()))->all();
+            $before = $user->roles->pluck('name')->sort()->values()->all();
             $user->syncRoles([...$data['roles'], ...$keep]);
+            $after = $user->load('roles')->roles->pluck('name')->sort()->values()->all();
+
+            if ($before !== $after) {
+                Audit::record('roles_changed', $user, ['roles' => $before], ['roles' => $after]);
+            }
         }
 
         return new UserResource($user->load('roles'));

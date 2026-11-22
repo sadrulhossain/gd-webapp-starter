@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\StoreMenuRequest;
 use App\Http\Requests\Api\V1\UpdateMenuRequest;
 use App\Http\Resources\Api\V1\MenuResource;
 use App\Models\Menu;
+use App\Support\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -96,6 +97,8 @@ class MenuController extends Controller
                 Menu::query()->whereKey($id)->update(['sort' => ($i + 1) * 10]);
             }
         });
+
+        Audit::record('reordered', null, [], ['menu_ids' => $ids]);
 
         return response()->json(['data' => ['reordered' => count($ids)]]);
     }

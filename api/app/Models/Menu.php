@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['parent_id', 'permission_name', 'title', 'sort', 'icon', 'path', 'active', 'custom'])]
 class Menu extends Model
 {
+    use Auditable;
+
     /** @return array<string, string> */
     protected function casts(): array
     {
