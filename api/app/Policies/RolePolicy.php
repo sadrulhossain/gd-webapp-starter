@@ -30,6 +30,7 @@ class RolePolicy
 
     public function delete(User $user, Role $role): bool
     {
-        return $user->checkPermissionTo('roles.delete') && $role->name !== config('access.superadmin_role');
+        return $user->checkPermissionTo('roles.delete') && $role->name !== config('access.superadmin_role')
+            && ! in_array($role->name, config('permissions.system_roles'), true);
     }
 }

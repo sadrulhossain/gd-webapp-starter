@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\User;
+use App\Support\PermissionCatalog;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -71,4 +73,72 @@ it('deletes a role', function () {
 
     $this->deleteJson("/api/v1/roles/{$role->id}")->assertNoContent();
     expect(Role::where('name', 'temp')->exists())->toBeFalse();
+});
+
+it('declares permissions only in config/permissions.php and syncs them', function () {
+    $this->artisan('permissions:sync')->assertSuccessful();
+
+    expect(Permission::where('guard_name', 'api')->pluck('name')->sort()->values()->all())
+        ->toBe(collect(array_keys(PermissionCatalog::all()))->sort()->values()->all());
+    expect(Role::findByName('admin', 'api')->hasPermissionTo('settings.update'))->toBeTrue();
+
+    $this->artisan('permissions:sync')->assertSuccessful(); // idempotent
+});
+
+it('prunes undeclared permissions only with --prune', function () {
+    Permission::findOrCreate('legacy.thing', 'api');
+
+    $this->artisan('permissions:sync')->assertSuccessful();
+    expect(Permission::where('name', 'legacy.thing')->exists())->toBeTrue();
+
+    $this->artisan('permissions:sync --prune')->assertSuccessful();
+    expect(Permission::where('name', 'legacy.thing')->exists())->toBeFalse();
+});
+
+it('lists permissions grouped by module with labels', function () {
+    actingAsRole('viewer', ['roles.view']);
+    $this->artisan('permissions:sync');
+
+    $this->getJson('/api/v1/permissions')->assertOk()
+        ->assertJsonPath('groups.users.0.name', 'users.create')
+        ->assertJsonPath('groups.users.0.label', 'Create users');
+});
+
+it('refuses to delete a role that is still assigned, and a system role', function () {
+    actingAsRole('manager', ['roles.delete']);
+    $used = Role::findOrCreate('used', 'api');
+    User::factory()->create()->assignRole($used);
+    $admin = Role::findOrCreate('admin', 'api');
+
+    $this->deleteJson("/api/v1/roles/{$used->id}")->assertStatus(409);
+    $this->deleteJson("/api/v1/roles/{$admin->id}")->assertForbidden();
+});
+
+it('refuses to rename a system role', function () {
+    actingAsRole('manager', ['roles.update']);
+    $admin = Role::findOrCreate('admin', 'api');
+
+    $this->patchJson("/api/v1/roles/{$admin->id}", ['name' => 'boss'])
+        ->assertUnprocessable()->assertJsonStructure(['error' => ['details' => ['name']]]);
+});
+
+it('keeps permissions an editor does not hold when they replace a role\'s permissions', function () {
+    actingAsRole('manager', ['roles.update', 'users.view']);
+    $role = Role::findOrCreate('mixed', 'api');
+    $role->givePermissionTo([Permission::findOrCreate('users.view', 'api'), Permission::findOrCreate('settings.update', 'api')]);
+
+    $this->patchJson("/api/v1/roles/{$role->id}", ['permissions' => []])->assertOk();
+
+    expect($role->refresh()->permissions->pluck('name')->all())->toBe(['settings.update']);
+});
+
+it('only lets a non-superadmin assign roles whose permissions they hold', function () {
+    actingAsRole('manager', ['users.create', 'users.view']);
+    Role::findOrCreate('small', 'api')->givePermissionTo(Permission::findOrCreate('users.view', 'api'));
+    Role::findOrCreate('big', 'api')->givePermissionTo(Permission::findOrCreate('roles.delete', 'api'));
+
+    $this->postJson('/api/v1/users', ['name' => 'A', 'email' => 'a@example.com', 'password' => 'a-long-password-1', 'roles' => ['big']])
+        ->assertUnprocessable()->assertJsonStructure(['error' => ['details' => ['roles.0']]]);
+    $this->postJson('/api/v1/users', ['name' => 'A', 'email' => 'a@example.com', 'password' => 'a-long-password-1', 'roles' => ['small']])
+        ->assertCreated();
 });

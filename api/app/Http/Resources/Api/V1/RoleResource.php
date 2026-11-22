@@ -15,6 +15,8 @@ class RoleResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'is_system' => in_array($this->name, config('permissions.system_roles'), true),
+            'users_count' => $this->whenCounted('users'),
             'permissions' => $this->permissions->pluck('name')->sort()->values(),
         ];
     }

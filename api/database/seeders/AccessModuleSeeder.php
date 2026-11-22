@@ -5,15 +5,6 @@ namespace Database\Seeders;
 /** Users, roles and the menu tree. Not granted to `admin`: only the superadmin manages access until a role is given these. */
 class AccessModuleSeeder extends ModuleSeeder
 {
-    protected function permissions(): array
-    {
-        return [
-            'users.view', 'users.create', 'users.update', 'users.delete',
-            'roles.view', 'roles.create', 'roles.update', 'roles.delete',
-            'menus.view', 'menus.update',
-        ];
-    }
-
     protected function menus(): array
     {
         return [

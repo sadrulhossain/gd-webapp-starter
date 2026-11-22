@@ -6,11 +6,6 @@ use App\Models\Setting;
 
 class SettingsModuleSeeder extends ModuleSeeder
 {
-    protected function permissions(): array
-    {
-        return ['settings.view', 'settings.update'];
-    }
-
     protected function menus(): array
     {
         return [
@@ -18,11 +13,6 @@ class SettingsModuleSeeder extends ModuleSeeder
                 ['title' => 'Settings', 'permission' => 'settings.view', 'path' => '/settings', 'icon' => 'settings', 'sort' => 40],
             ]],
         ];
-    }
-
-    protected function grants(): array
-    {
-        return ['admin' => ['settings.view', 'settings.update']];
     }
 
     public function run(): void
