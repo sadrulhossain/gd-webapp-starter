@@ -22,6 +22,8 @@ class MenuResource extends JsonResource
             'path' => $this->path,
             'permission_name' => $this->permission_name,
             'sort' => $this->sort,
+            'active' => $this->active,
+            'custom' => $this->custom,
         ];
     }
 }

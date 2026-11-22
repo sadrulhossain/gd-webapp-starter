@@ -50,5 +50,7 @@ Route::prefix('v1')->group(function (): void {
         Route::put('menus/reorder', [MenuController::class, 'reorder']);
         Route::get('menus', [MenuController::class, 'index']);
         Route::patch('menus/{menu}', [MenuController::class, 'update']);
+        Route::post('menus', [MenuController::class, 'store']);
+        Route::delete('menus/{menu}', [MenuController::class, 'destroy']);
     });
 });
