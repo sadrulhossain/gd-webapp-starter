@@ -8,6 +8,6 @@ export const config = {
   redirectUri: () => `${location.origin}/auth/callback`,
   apiBase: () => `${location.origin}/api`,
   tokenUrl: () => `${location.origin}/oauth/token`,
-  /** admin.example.test:28080 -> api.example.test:28080 */
+  /** admin.example.test:31080 -> api.example.test:31080 */
   apiOrigin: () => location.origin.replace('//admin.', '//api.'),
 }

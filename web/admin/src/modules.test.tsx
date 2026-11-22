@@ -10,7 +10,7 @@ const byKey = (key: string) => modules.find((m) => m.key === key)!
 
 describe('module configs', () => {
   it('registers every admin module once, with unique keys and paths', () => {
-    for (const key of ['users', 'roles', 'menus', 'sections']) expect(byKey(key)).toBeDefined()
+    for (const key of ['users', 'roles', 'menus']) expect(byKey(key)).toBeDefined()
     expect(new Set(modules.map((m) => m.key)).size).toBe(modules.length)
     expect(new Set(modules.map((m) => m.path)).size).toBe(modules.length)
     expect(modules.map((m) => m.path)).not.toContain(settings.path)
@@ -28,13 +28,7 @@ describe('module configs', () => {
   })
 
   it('points reorder at <endpoint>/reorder', () => {
-    for (const key of ['sections', 'menus']) expect(byKey(key).reorder?.endpoint).toBe(`${byKey(key).endpoint}/reorder`)
-  })
-
-  it('sections: edit-only, toggle column, bilingual title and content', () => {
-    const s = byKey('sections')
-    expect([s.canCreate, s.canDelete]).toEqual([false, false])
-    expect(s.fields.filter((f) => f.bilingual).map((f) => f.name)).toEqual(['title', 'content'])
+    expect(byKey('menus').reorder?.endpoint).toBe(`${byKey('menus').endpoint}/reorder`)
   })
 
   it('menus: edit-only, reorder stays within one parent', () => {
@@ -76,15 +70,15 @@ describe('settings config', () => {
 
   it('covers every API key and sends only those', () => {
     expect(settingsKeys(settings).sort()).toEqual(
-      ['address', 'address_2nd', 'currency', 'currency_symbol', 'email', 'hours', 'phone', 'site_name', 'site_name_2nd', 'social_links', 'tagline', 'tagline_2nd'].sort(),
+      ['address', 'currency', 'currency_symbol', 'email', 'hours', 'phone', 'site_name', 'social_links', 'tagline'].sort(),
     )
     const body = settingsPayload(settings, { site_name: 'S', phone: '', updated_at: 'x', hours: { mon: { open: '', close: '', closed: true } }, social_links: { x: '' } })
     expect(body).toMatchObject({ site_name: 'S', phone: null, hours: { mon: { open: null, close: null, closed: true } }, social_links: { x: null } })
     expect(body).not.toHaveProperty('updated_at')
   })
 
-  it('has bilingual site name and a field per weekday and network', () => {
-    expect(settings.tabs[0]!.fields[0]).toMatchObject({ name: 'site_name', bilingual: true })
+  it('has the site name and a field per weekday and network', () => {
+    expect(settings.tabs[0]!.fields[0]).toMatchObject({ name: 'site_name' })
     const names = settings.tabs.flatMap((t) => t.fields.map((f) => f.name))
     expect(names.filter((n) => n.startsWith('hours.'))).toHaveLength(21)
     expect(names).toContain('social_links.whatsapp')

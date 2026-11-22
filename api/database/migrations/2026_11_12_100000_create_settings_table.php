@@ -13,11 +13,8 @@ return new class extends Migration
             // Not auto-increment: MariaDB cannot put a CHECK on an auto-increment column, and this table only ever holds id 1.
             $table->unsignedTinyInteger('id')->primary();
             $table->string('site_name');
-            $table->string('site_name_2nd')->nullable();
             $table->string('tagline')->nullable();
-            $table->string('tagline_2nd')->nullable();
             $table->text('address')->nullable();
-            $table->text('address_2nd')->nullable();
             $table->string('phone', 40)->nullable();
             $table->string('email')->nullable();
             $table->jsonb('hours')->nullable();

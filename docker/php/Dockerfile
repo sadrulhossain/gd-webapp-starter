@@ -5,10 +5,10 @@ FROM composer:${COMPOSER_VERSION} AS composer
 FROM php:${PHP_VERSION}-fpm-alpine
 ARG UPLOADS_CONTAINER_PATH
 
-RUN apk add --no-cache git unzip libwebp libjpeg-turbo libpng \
- && apk add --no-cache --virtual .build $PHPIZE_DEPS libwebp-dev libjpeg-turbo-dev libpng-dev \
+RUN apk add --no-cache git unzip libwebp libjpeg-turbo libpng libpq \
+ && apk add --no-cache --virtual .build $PHPIZE_DEPS libwebp-dev libjpeg-turbo-dev libpng-dev postgresql-dev \
  && docker-php-ext-configure gd --with-webp --with-jpeg \
- && docker-php-ext-install -j"$(nproc)" gd pdo_mysql pcntl \
+ && docker-php-ext-install -j"$(nproc)" gd pdo_pgsql pcntl \
  && apk del .build
 
 # Uploads volume mount point: owned by www-data so a fresh named volume is writable.

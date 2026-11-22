@@ -2,19 +2,16 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\HasSecondLanguage;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
 /** Site-wide settings. Singleton: one row (id 1), edit-only. Use Setting::current(). */
 #[Fillable([
-    'site_name', 'site_name_2nd', 'tagline', 'tagline_2nd', 'logo', 'favicon', 'currency', 'currency_symbol', 'address', 'address_2nd',
+    'site_name', 'tagline', 'logo', 'favicon', 'currency', 'currency_symbol', 'address',
     'phone', 'email', 'hours', 'social_links',
 ])]
 class Setting extends Model
 {
-    use HasSecondLanguage;
-
     /** The id is the fixed 1, not auto-increment (see the settings migration). */
     public $incrementing = false;
 

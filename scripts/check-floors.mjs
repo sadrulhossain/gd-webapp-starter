@@ -19,7 +19,7 @@ const cmp = (a, b) => {
 
 const checks = []
 const env = existsSync('.env') ? readFileSync('.env', 'utf8') : readFileSync('.env.example', 'utf8')
-for (const [key, row] of Object.entries({ PHP_VERSION: /^PHP$/, NODE_VERSION: /^Node/, NGINX_VERSION: /^nginx/, MARIADB_VERSION: /^MariaDB/, MAILPIT_VERSION: /^Mailpit/, COMPOSER_VERSION: /^Composer/ })) {
+for (const [key, row] of Object.entries({ PHP_VERSION: /^PHP$/, NODE_VERSION: /^Node/, NGINX_VERSION: /^nginx/, POSTGRES_VERSION: /^PostgreSQL/, MAILPIT_VERSION: /^Mailpit/, COMPOSER_VERSION: /^Composer/ })) {
   const v = env.match(new RegExp(`^${key}=(.+)$`, 'm'))?.[1]
   if (v) checks.push([key, v, floorOf(row)])
 }

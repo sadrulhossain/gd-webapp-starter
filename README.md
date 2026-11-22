@@ -1,12 +1,11 @@
-# gd-business-site-boilerplate
+# gd-webapp-starter
 
-A small-business website you can run on one VPS: a public portal (Next.js) in two languages, an admin app (React) to edit everything,
-and a Laravel API behind both. Content: hero, about us, sections, services, pricing (per service, hidden until switched on), team, testimonials, gallery, FAQ, blog, contact inbox, settings (logo, favicon, currency, social links), users and roles.
+A starter for web applications: a Laravel API and a React admin app with users, roles, permissions, menus and settings.
+New products add their own modules on top. Admin is English only. Cache, queue and sessions use PostgreSQL (no Redis).
 
 | Part | Where | Stack |
 |------|-------|-------|
-| API | `api/` | Laravel 13, PHP 8.5, MariaDB, Passport (OAuth 2 + PKCE), spatie/permission |
-| Portal | `web/portal` | Next.js 16 (App Router, ISR), Tailwind 4 |
+| API | `api/` | Laravel 13, PHP 8.5, PostgreSQL 18, Passport (OAuth 2 + PKCE), spatie/permission |
 | Admin | `web/admin` | Vite, React 19, TanStack Query, TipTap |
 | Shared | `packages/` | design tokens, typed API client, OpenAPI types |
 
@@ -17,7 +16,7 @@ Versions and their security floors: [docs/VERSIONS.md](docs/VERSIONS.md).
 You need Docker with Compose and a browser. Nothing else is installed on the host.
 
 ```sh
-git clone <your fork> site && cd site
+git clone https://github.com/sadrulhossain/gd-webapp-starter.git && cd gd-webapp-starter
 cp .env.example .env     # then set APP_KEY=base64:<output of: openssl rand -base64 32> and change every change-me
 docker compose up -d --build --wait
 sh scripts/ensure-test-db.sh   # creates the testing database used by Pest
@@ -27,15 +26,14 @@ Then open (the `.localhost` names resolve to your machine in modern browsers; no
 
 | URL | What |
 |-----|------|
-| http://gdsite.localhost:28080 | Portal (`/bn` for the second language when enabled) |
-| http://admin.gdsite.localhost:28080 | Admin (sign in with the superadmin below) |
-| http://api.gdsite.localhost:28080/docs/api | API reference (Scramble, dev only) |
-| http://localhost:28026 | Mailpit, catches the contact-form mail |
+| http://admin.gd-webapp-starter.localhost:31080 | Admin (sign in with the superadmin below) |
+| http://api.gd-webapp-starter.localhost:31080/docs/api | API reference (Scramble, dev only) |
+| http://localhost:31026 | Mailpit, catches outgoing mail |
 
 First run only: set `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD` and `OAUTH_ADMIN_REDIRECT_URI` in `api/.env` (copy `api/.env.example`), then
 `docker compose exec php php artisan migrate --seed`. Change every `change-me` in `.env`.
 
-Optional demo content in English and the second language (not part of `DatabaseSeeder`): `docker compose exec php php artisan db:seed --class="Database\Seeders\Site\SiteDataSeeder"`. Logo and favicon are uploaded in the admin under Settings; the built-in ones show until then. Footer credit: Powered by Orvyx Technologies.
+Logo and favicon are uploaded in the admin under Settings; the built-in ones show until then.
 
 Daily commands:
 
@@ -48,29 +46,28 @@ Daily commands:
 | `docker compose exec -T php composer audit` | dependency advisories |
 | `docker compose exec -T nginx nginx -t` | nginx config test |
 | `docker compose config -q` | compose file validity |
+| `sh scripts/check.sh` | the whole final check, once per phase |
 | `docker compose exec -T php php artisan security:routes`, `sh scripts/check-secrets.sh`, `node scripts/check-floors.mjs` | security gates: route/policy audit, secrets scan, version floors |
 | `sh scripts/check-ports.sh` | host ports from `.env` are free or ours |
 | `docker compose exec -T php php artisan scramble:export --path=storage/openapi.json` | re-export the API spec; move `api/storage/openapi.json` to `packages/api-types/openapi.json`, then `pnpm generate:types` |
 
-The optional `Makefile` wraps these (`make up`, `make t FILTER=...`, `make check`, `make security`, `make openapi`, `make web`); nothing depends on it.
+The final check for a phase is one script: `sh scripts/check.sh` (compose configs, shell syntax, nginx, Pint, Larastan, Pest, composer audit, route audit, secrets, version floors). Everything runs through `docker compose` and `sh`; there is no Makefile.
 
-Browser tests (Playwright, official image): `docker compose --profile e2e run --rm --no-deps -T -w /app/web/portal e2e npx playwright test`.
-
-The dev containers do not see file changes on Windows hosts: after editing portal code, stop `node`, delete `web/portal/.next` and start it again.
+Browser tests (Playwright, official image): `docker compose --profile e2e run --rm --no-deps -T e2e npx playwright test`.
 
 ## Production
 
 One VPS (1 vCPU / 1 GB is the minimum, 2 GB recommended: [docs/SIZING.md](docs/SIZING.md)), your domain, a TLS certificate.
-`docker-compose.prod.yml` runs the portal as a Node server, serves the admin as built static files from nginx, publishes only ports 80 and 443,
-keeps MariaDB private and restarts everything on failure. Steps: [docs/DEPLOY.md](docs/DEPLOY.md). Backups: `sh scripts/backup.sh`.
+`docker-compose.prod.yml` serves the admin as built static files from nginx, publishes only ports 80 and 443,
+keeps PostgreSQL private and restarts everything on failure. Steps: [docs/DEPLOY.md](docs/DEPLOY.md). Backups: `sh scripts/backup.sh`.
 
 ## Documentation
 
 | File | Read it for |
 |------|-------------|
-| [docs/OVERVIEW.md](docs/OVERVIEW.md) | what the product is, what a client gets, the website pages and admin modules |
+| [docs/OVERVIEW.md](docs/OVERVIEW.md) | what the kit is and what ships in it |
 | [docs/DEPLOY.md](docs/DEPLOY.md) | VPS setup, TLS, first deploy, backups, restore |
-| [docs/CUSTOMIZE.md](docs/CUSTOMIZE.md) | brand colours, a second language, new modules and sections |
+| [docs/CUSTOMIZE.md](docs/CUSTOMIZE.md) | branding, new modules, new settings |
 | [docs/UPGRADE.md](docs/UPGRADE.md) | updating a running site, rollback |
 | [docs/PATTERNS.md](docs/PATTERNS.md) | the reference code shapes to copy |
 | [docs/ENV.md](docs/ENV.md) | every environment variable |
@@ -83,6 +80,6 @@ keeps MariaDB private and restarts everything on failure. Steps: [docs/DEPLOY.md
 ```
 api/        Laravel API            docker/     Dockerfiles, nginx templates, prod entrypoints
 web/admin   Admin SPA              docs/       the documents above
-web/portal  Public portal          scripts/    ports, secrets, version floors, backup, restore
+            scripts/    check, ports, secrets, version floors, backup, restore
 packages/   tokens, api-client, api-types
 ```

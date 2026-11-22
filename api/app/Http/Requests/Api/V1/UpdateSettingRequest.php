@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Api\V1;
 
 use App\Models\Setting;
-use App\Support\Bilingual;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateSettingRequest extends FormRequest
@@ -18,11 +17,9 @@ class UpdateSettingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            ...Bilingual::rules([
-                'site_name' => ['sometimes', 'required', 'string', 'max:120'],
-                'tagline' => ['sometimes', 'nullable', 'string', 'max:255'],
-                'address' => ['sometimes', 'nullable', 'string', 'max:500'],
-            ]),
+            'site_name' => ['sometimes', 'required', 'string', 'max:120'],
+            'tagline' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'address' => ['sometimes', 'nullable', 'string', 'max:500'],
             'currency' => ['sometimes', 'nullable', 'string', 'max:10'],
             'currency_symbol' => ['sometimes', 'nullable', 'string', 'max:10'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:40'],

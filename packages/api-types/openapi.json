@@ -6,7 +6,7 @@
     },
     "servers": [
         {
-            "url": "http://api.gdsite.localhost:28080/api"
+            "url": "http://api.gd-webapp-starter.localhost:31080/api"
         }
     ],
     "paths": {

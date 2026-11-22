@@ -1,15 +1,15 @@
 # Reference patterns
 
-Copy these shapes, do not invent new ones. Reference module: Sections (`Section*` under `api/app`);
+Copy these shapes, do not invent new ones. Reference module: Users (`User*` under `api/app`);
 singleton reference: Settings. Paths below are relative to `api/app` unless noted.
 
 ## New module checklist
-1. **Migration + Model**: `#[Fillable]`, `casts()`. Bilingual text = columns `x` + `x_2nd`, `use HasSecondLanguage`.
+1. **Migration + Model**: `#[Fillable]`, `casts()`.
 2. **Policy** `Policies/<Model>Policy.php`: one method per action, `$user->checkPermissionTo('<module>.<action>')`.
    Permission names are `<module>.<action>`; the superadmin passes via `Gate::before`.
 3. **FormRequest** `Http/Requests/Api/V1/<Action><Model>Request.php`: `authorize()` returns
    `$this->user()?->can('<ability>', $model)` (403 comes before validation). `rules()` use `sometimes`
-   for PATCH and wrap bilingual fields in `Bilingual::rules([...])`.
+   for PATCH.
 4. **Resource** `Http/Resources/Api/V1/<Model>Resource.php`: explicit field list, both languages, no model dumps.
 5. **Controller** `Http/Controllers/Api/V1/<Model>Controller.php`: thin. Reads call `Gate::authorize()`; writes
    type-hint the FormRequest, `$model->update($request->validated())`, return the Resource. The first docblock
@@ -78,26 +78,6 @@ singleton reference: Settings. Paths below are relative to `api/app` unless note
 - `status` (draft|published) is the API's view of `is_published` (`ResolvesPostStatus`); forms use `status`, never the boolean.
 - Own account: `PATCH /v1/me` (`ProfileController`), page `pages/Profile.tsx`; no permission, any signed-in user.
 
-## Portal (phase 12)
-- Locales: `lib/i18n.ts` reads LOCALE_DEFAULT / LOCALE_SUPPORTED. `proxy.ts` rewrites unprefixed paths to `/<default>/...` and redirects an explicit
-  default prefix away; pages live under `app/[locale]/`. Build links with `localePath(locale, path)`, never by hand. Env is server-only: client
-  components take `locales` / `unprefixed` as props (see `LanguageSwitcher`).
-- Text: `messages/en.json` (default locale) and `messages/second.json` (second); add every key to both. Content text comes from the API with `?lang=`.
-- Data: only through `lib/api.ts` (`apiFor(locale)`, server side, `API_INTERNAL_URL`). Reads are `revalidate: 3600` and tagged with the API table name;
-  `POST /api/revalidate` (HMAC, same secret as the API webhook) expires a tag. New public resource: add it to `TAGS` there.
-- Sections: add a view to `components/sections/index.tsx` keyed by the section `key`; the renderer skips `is_visible: false` and falls back to a generic view.
-- Styling: logical utilities only (`ms-`, `me-`, `ps-`, `pe-`, `text-start`, `border-s`), so RTL locales work. `images.unoptimized` is on: use `components/Media.tsx`.
-- Dev note: after changing a server component that a client component consumes, a stale Turbopack cache can serve old props; `rm -rf web/portal/.next` and restart node.
-- Screenshots: `docker compose --profile e2e run --rm --no-deps -T -w /app/web/portal e2e npx playwright test`.
-
-## Portal pages (phase 13)
-- A page for a section is `lib/section-page.tsx` `sectionPage('<key>', [extra keys])` in a two-line `page.tsx`: it renders the same `SectionBlock` view as Home
-  (title becomes the h1) and 404s when the section is hidden. Add the key to `SECTION_PAGES` so the header links to the page instead of a Home anchor.
-- Static legal text (`privacy`, `terms`) lives in `messages/*.json` under `legal`, with `{site}` / `{email}` filled from settings (`lib/legal-page.tsx`).
-  It is a generic template: the business must review it.
-- `getMessages` falls back key by key to `en.json`, so a missing or empty entry in `second.json` shows the default text. API content does the same via `?lang=`.
-- 404: `app/[locale]/[...rest]/page.tsx` calls `notFound()` for unknown paths; `not-found.tsx` must not read request headers (that makes every locale route dynamic, no ISR): `NotFoundContent` picks the locale from the URL.
-- Proxy matcher: keep the double backslash in `.*\..*`; a single one silently matches nothing useful. After editing `proxy.ts` restart node with a clean `.next`.
 
 ## Blog, contact and SEO (phase 14)
 - Every page builds its metadata with `lib/seo.ts` `pageMetadata({locale, path, siteName, ...})`: title, description, canonical, hreflang (all locales + x-default), Open Graph, Twitter.
@@ -121,3 +101,5 @@ singleton reference: Settings. Paths below are relative to `api/app` unless note
 - A new service needs `restart: always`, a `healthcheck`, the `logging` anchor and a `depends_on` with `condition: service_healthy`.
 - The portal builds on first container start (it needs the API); bump `IMAGE_ID` per release. The php entrypoint migrates and caches config; seeders are run by hand (UPGRADE.md).
 - Backups: `scripts/backup.sh` / `restore.sh`. Anything new that holds state (a volume) must be added to both.
+
+> The business-site portal and content-module sections of this file were removed in W0 (English only, API plus admin). The admin is English only: ignore any remaining `bilingual` / `?lang=` notes.

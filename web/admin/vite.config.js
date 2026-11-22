@@ -8,7 +8,7 @@ export default defineConfig({
   define: { __OAUTH_CLIENT_ID__: JSON.stringify(process.env.OAUTH_ADMIN_CLIENT_ID ?? '') },
   server: {
     host: '0.0.0.0',
-    port: Number(process.env.ADMIN_DEV_PORT || 28301),
+    port: Number(process.env.ADMIN_DEV_PORT || 31301),
     strictPort: true,
     allowedHosts: [`admin.${process.env.APP_DOMAIN}`],
     watch: { usePolling: true },

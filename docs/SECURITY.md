@@ -33,7 +33,7 @@ Run 2026-11-13. `composer audit`: none. `pnpm audit --prod` and `pnpm audit`: no
 
 | Image | Result | Decision |
 |-------|--------|----------|
-| `gdsite-php:8.5.12` (alpine 3.24.4) | 0 | clean |
+| `gd-webapp-starter-php:8.5.12` (alpine 3.24.4) | 0 | clean |
 | `axllent/mailpit:v1.33.1` | 0 | clean (dev profile only) |
 | `node:24.22.3-alpine` | 4: `brace-expansion` 5.0.9 and `undici` 6.28.0, both inside the image's bundled **npm** (`/usr/local/lib/node_modules/npm`) | accepted: npm is never run at request time (pnpm via corepack); our own tree is clean under `pnpm audit`. For a production image: `rm -rf /usr/local/lib/node_modules/npm`, or take the next `node:24` tag |
 | `nginx:1.30.6-alpine` | 1 HIGH: `libxslt` 1.1.43-r3 (fixed in r4) | accepted: the xslt module is neither loaded nor used by our config. Recheck when `nginx:1.30.x-alpine` is rebuilt |

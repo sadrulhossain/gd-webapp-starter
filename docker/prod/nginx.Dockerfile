@@ -10,7 +10,6 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages ./packages
 COPY web/admin ./web/admin
-COPY web/portal/package.json ./web/portal/package.json
 RUN pnpm install --frozen-lockfile --filter admin... --reporter=silent
 RUN cd web/admin && pnpm exec vite build
 

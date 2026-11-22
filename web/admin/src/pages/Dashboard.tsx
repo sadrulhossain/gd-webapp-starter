@@ -6,14 +6,8 @@ import { Icon } from '../components/Icon'
 
 /** Dashboard card order: key => [label, admin path, icon]. The API only returns counts the user may see. */
 const CARDS: Record<string, [string, string, string]> = {
-  unread_messages: ['Unread messages', '/messages', 'mail'],
-  posts: ['Posts', '/posts', 'file-text'],
-  categories: ['Categories', '/categories', 'tag'],
-  services: ['Services', '/services', 'briefcase'],
-  testimonials: ['Testimonials', '/testimonials', 'message-square'],
-  team: ['Team members', '/team', 'users'],
-  gallery: ['Gallery items', '/gallery', 'image'],
-  faqs: ['FAQs', '/faqs', 'help-circle'],
+  users: ['Users', '/users', 'users'],
+  roles: ['Roles', '/roles', 'shield'],
 }
 
 export function Dashboard() {
@@ -27,7 +21,7 @@ export function Dashboard() {
     <section className="space-y-6">
       <header className="rounded-2xl bg-gradient-to-br from-primary-600 to-primary-800 p-4 sm:p-6 text-white shadow-lg">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="mt-1 text-white/85">Welcome back, {name}. Here is what is happening on your site.</p>
+        <p className="mt-1 text-white/85">Welcome back, {name}. Here is what is happening in your workspace.</p>
       </header>
 
       {counts.isError && (
