@@ -5,7 +5,7 @@ import { CrudPage, type CrudConfig } from './components/CrudPage'
 import { AppShell } from './layout/AppShell'
 import { modules } from './modules'
 import { Callback, SignedOut } from './pages/auth'
-import { Dashboard } from './pages/Dashboard'
+import { Home } from './pages/Home'
 import { NotFound } from './pages/errors'
 import { ProfilePage } from './pages/Profile'
 import { SettingsPage } from './pages/Settings'
@@ -31,11 +31,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: (
-          <RequirePermission permission="dashboard.view">
-            <Dashboard />
-          </RequirePermission>
-        ),
+        element: <Home />,
       },
       ...modules.map((config) => {
         const Page = pages[config.key] ?? CrudPage
