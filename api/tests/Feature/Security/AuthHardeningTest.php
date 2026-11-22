@@ -1,9 +1,8 @@
 <?php
 
-use App\Models\Section;
+use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\OauthClientSeeder;
-use Database\Seeders\SectionsModuleSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -73,34 +72,24 @@ describe('OAuth authorization (PKCE)', function () {
 describe('uploads', function () {
     beforeEach(function () {
         Storage::fake('uploads');
-        $this->seed(SectionsModuleSeeder::class);
-        $this->section = Section::where('key', 'hero')->firstOrFail();
-        actingAsRole('editor', ['sections.update']);
+        actingAsRole('editor', ['settings.view', 'settings.update']);
     });
 
-    $upload = fn ($test, UploadedFile $file) => $test->post("/api/v1/sections/{$test->section->id}/image", ['image' => $file], ['Accept' => 'application/json']);
+    $upload = fn ($test, UploadedFile $file) => $test->post('/api/v1/settings/logo', ['image' => $file], ['Accept' => 'application/json']);
 
     it('rejects PHP, HTML and SVG payloads dressed up as images', function () use ($upload) {
         foreach (['shell.php.jpg' => '<?php system($_GET["c"]);', 'page.png' => '<html><script>alert(1)</script></html>', 'logo.svg' => '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'] as $name => $content) {
             $upload($this, UploadedFile::fake()->createWithContent($name, $content))->assertStatus(422);
         }
 
-        expect($this->section->refresh()->image)->toBeNull();
+        expect(Setting::current()->logo)->toBeNull();
     });
 
     it('stores a genuine image under a generated name, never the client one', function () use ($upload) {
         $upload($this, UploadedFile::fake()->image('../../evil.php.jpg', 100, 100))->assertOk();
 
-        $path = $this->section->refresh()->image;
-        expect($path)->toMatch('#^sections/[a-z0-9]{32}/original\.jpg$#')->not->toContain('evil')->not->toContain('..');
+        $path = Setting::current()->logo;
+        expect($path)->not->toBeNull()->not->toContain('evil')->not->toContain('..');
         expect(collect(Storage::disk('uploads')->allFiles())->filter(fn ($f) => preg_match('/\.(php|phtml|phar|html?|svg)$/i', $f)))->toBeEmpty();
     });
-});
-
-it('rate limits the captcha endpoint', function () {
-    foreach (range(1, 30) as $ignored) {
-        $this->getJson('/api/v1/public/captcha')->assertOk();
-    }
-
-    $this->getJson('/api/v1/public/captcha')->assertStatus(429);
 });

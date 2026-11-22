@@ -34,13 +34,13 @@ One certificate must cover all three names (a wildcard `*.example.com` plus `exa
 
 ```sh
 sudo certbot certonly --standalone -d example.com -d admin.example.com -d api.example.com
-sudo mkdir -p /etc/gdsite/certs
-sudo ln -sf /etc/letsencrypt/live/example.com/fullchain.pem /etc/gdsite/certs/fullchain.pem
-sudo ln -sf /etc/letsencrypt/live/example.com/privkey.pem  /etc/gdsite/certs/privkey.pem
+sudo mkdir -p /etc/gd-webapp-starter/certs
+sudo ln -sf /etc/letsencrypt/live/example.com/fullchain.pem /etc/gd-webapp-starter/certs/fullchain.pem
+sudo ln -sf /etc/letsencrypt/live/example.com/privkey.pem  /etc/gd-webapp-starter/certs/privkey.pem
 ```
 
 Symlinks into `/etc/letsencrypt` do not resolve inside the container, so copy the real files instead:
-`sudo cp -L /etc/letsencrypt/live/example.com/{fullchain,privkey}.pem /etc/gdsite/certs/`. Renewal (monthly cron, or a certbot deploy hook):
+`sudo cp -L /etc/letsencrypt/live/example.com/{fullchain,privkey}.pem /etc/gd-webapp-starter/certs/`. Renewal (monthly cron, or a certbot deploy hook):
 renew, copy the files again, then `docker compose -f docker-compose.prod.yml --env-file .env.prod exec nginx nginx -s reload`.
 (Certbot's standalone mode needs port 80 free: run it before the first start, and use `--webroot` or a DNS challenge for renewals.)
 If a load balancer or CDN terminates TLS in front, mount its origin certificate here and set `TRUSTED_PROXY_CIDR` to the balancer's address range only.

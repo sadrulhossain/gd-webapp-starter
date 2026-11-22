@@ -15,25 +15,6 @@ server {
     location / { return 404; }
 }
 
-# portal = APP_DOMAIN (Next dev server).
-# Dev CSP: Next and Vite need 'unsafe-eval' (HMR) and inline scripts. Production builds should use nonces and drop both.
-server {
-    listen 80;
-    server_name ${APP_DOMAIN};
-    resolver 127.0.0.11 valid=10s;
-    include /etc/nginx/snippets/security-headers.conf;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http://api.${APP_DOMAIN}:* https://api.${APP_DOMAIN}; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
-    location / {
-        set $upstream http://node:${PORTAL_DEV_PORT};
-        proxy_pass $upstream;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection $connection_upgrade;
-    }
-}
-
 # admin.* (Vite dev server). /api and /oauth/token go to php so the SPA is same-origin with the API (no CORS).
 server {
     listen 80;
@@ -74,7 +55,7 @@ server {
     index index.php;
     client_max_body_size ${UPLOADS_MAX_MB}m;
     resolver 127.0.0.11 valid=10s;
-    # Visitor IP for the API throttles: trust X-Forwarded-For only from our own network (the portal server forwards it).
+    # Visitor IP for the API throttles: trust X-Forwarded-For only from our own network.
     # In production set TRUSTED_PROXY_CIDR to the internal range / load balancer only; a wider range lets clients spoof their IP.
     set_real_ip_from ${TRUSTED_PROXY_CIDR};
     real_ip_header X-Forwarded-For;

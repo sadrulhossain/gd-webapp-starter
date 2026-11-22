@@ -5,17 +5,16 @@ each service lists its own `environment:` (no `env_file`). Commit only `*.exampl
 
 | Variable | Used by | Default | Notes |
 |----------|---------|---------|-------|
-| COMPOSE_PROJECT_NAME | compose | gdsite | container names are `${COMPOSE_PROJECT_NAME}-<tech>` |
+| COMPOSE_PROJECT_NAME | compose | gd-webapp-starter | container names are `${COMPOSE_PROJECT_NAME}-<tech>` |
 | COMPOSE_PROFILES | compose | dev | `dev` enables mailpit |
 | APP_ENV | php* | local | |
-| APP_DOMAIN | nginx, node, php* | gdsite.localhost | portal = APP_DOMAIN, `admin.` and `api.` subdomains |
-| PHP_VERSION, LARAVEL_VERSION, COMPOSER_VERSION, NODE_VERSION, NEXT_VERSION, NGINX_VERSION, MARIADB_VERSION, MAILPIT_VERSION, VITE_VERSION, REACT_VERSION | compose build/images, the version check (docs/VERSIONS.md) | see docs/VERSIONS.md | must match VERSIONS.md |
-| NGINX_HTTP_PORT | nginx | 28080 | published on all interfaces |
-| MARIADB_PORT | mariadb | 28306 | bound to 127.0.0.1 |
-| MAILPIT_SMTP_PORT / MAILPIT_UI_PORT | mailpit | 28025 / 28026 | bound to 127.0.0.1 |
-| PORTAL_DEV_PORT / ADMIN_DEV_PORT | node, nginx | 28300 / 28301 | not published; nginx proxies to them |
-| MARIADB_DATABASE / MARIADB_USER / MARIADB_PASSWORD | mariadb, php* | gdsite / gdsite / change-me | php gets them as DB_DATABASE / DB_USERNAME / DB_PASSWORD; tests use `<MARIADB_DATABASE>_testing` |
-| MARIADB_ROOT_PASSWORD | mariadb | change-me | only used by `sh scripts/ensure-test-db.sh` to create the testing database |
+| APP_DOMAIN | nginx, node, php* | gd-webapp-starter.localhost | portal = APP_DOMAIN, `admin.` and `api.` subdomains |
+| PHP_VERSION, LARAVEL_VERSION, COMPOSER_VERSION, NODE_VERSION, NGINX_VERSION, POSTGRES_VERSION, MAILPIT_VERSION, VITE_VERSION, REACT_VERSION | compose build/images, the version check (docs/VERSIONS.md) | see docs/VERSIONS.md | must match VERSIONS.md |
+| NGINX_HTTP_PORT | nginx | 31080 | published on all interfaces |
+| POSTGRES_PORT | mariadb | 28306 | bound to 127.0.0.1 |
+| MAILPIT_SMTP_PORT / MAILPIT_UI_PORT | mailpit | 31025 / 31026 | bound to 127.0.0.1 |
+| PORTAL_DEV_PORT / ADMIN_DEV_PORT | node, nginx | 28300 / 31301 | not published; nginx proxies to them |
+| POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD | postgres, php* | gd_webapp_starter / gd_webapp_starter / change-me | php gets them as DB_DATABASE / DB_USERNAME / DB_PASSWORD; tests use `<POSTGRES_DB>_testing` |
 | UPLOADS_CONTAINER_PATH | php*, nginx, Dockerfile | /var/www/uploads | disk root and volume mount point; nginx serves `/uploads/` |
 | UPLOADS_MAX_MB | php*, nginx | 5 | validation, php.ini upload limits and nginx `client_max_body_size` |
 | CORS_ALLOWED_ORIGINS | php | empty (closed) | comma separated exact origins allowed to call the API from a browser; credentials are never allowed |
@@ -47,7 +46,7 @@ Template: `.env.prod.example`.
 | HTTP_PORT / HTTPS_PORT | nginx | published ports, default 80 / 443. The only published ports of the stack |
 | TLS_CERT_DIR | nginx | host directory with `fullchain.pem` and `privkey.pem`, mounted read-only; one certificate for the three names |
 | IMAGE_ID | portal | any string that changes per release; the portal rebuilds its site when it differs from the one it built last |
-| MARIADB_DATABASE / MARIADB_USER / MARIADB_PASSWORD / MARIADB_ROOT_PASSWORD | mariadb, php* | passwords required; the database is not published |
+| POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD | postgres, php* | passwords required; the database is not published |
 | UPLOADS_CONTAINER_PATH / UPLOADS_MAX_MB | php*, nginx | uploads volume mount path (same in all three) and size limit |
 | SUPERADMIN_NAME / SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD | php* | read by the seeder; email and password required |
 | OAUTH_ADMIN_CLIENT_ID | php*, nginx build | public PKCE client id, baked into the admin build; the redirect URI is derived (`https://admin.<domain>/auth/callback`) |

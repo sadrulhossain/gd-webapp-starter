@@ -45,7 +45,7 @@ it('answers 403 to a signed-in user without permissions on every collection rout
         $checked++;
     }
 
-    expect($checked)->toBeGreaterThan(15);
+    expect($checked)->toBeGreaterThan(8);
 });
 
 it('keeps CORS closed: no Access-Control-Allow-Origin for a foreign origin, even on preflight', function () {

@@ -24,7 +24,6 @@ it('shows the seeded defaults', function () {
     $this->getJson('/api/v1/settings')
         ->assertOk()
         ->assertJsonPath('data.site_name', 'My Business')
-        ->assertJsonPath('data.site_name_2nd', null)
         ->assertJsonPath('data.hours.mon.open', '09:00')
         ->assertJsonPath('data.hours.sun.closed', true)
         ->assertJsonPath('data.social_links', []);
@@ -36,19 +35,17 @@ it('forbids updating with view-only access, before validating', function () {
     $this->putJson('/api/v1/settings', ['email' => 'not-an-email'])->assertForbidden();
 });
 
-it('updates both languages, hours and social links', function () {
+it('updates the name, hours and social links', function () {
     actingAsRole('editor', ['settings.view', 'settings.update']);
 
     $this->patchJson('/api/v1/settings', [
         'site_name' => 'Acme',
-        'site_name_2nd' => 'এক্মি',
         'email' => 'hello@acme.test',
         'hours' => ['mon' => ['open' => '08:30', 'close' => '18:00', 'closed' => false]],
         'social_links' => ['facebook' => 'https://facebook.com/acme'],
     ])
         ->assertOk()
         ->assertJsonPath('data.site_name', 'Acme')
-        ->assertJsonPath('data.site_name_2nd', 'এক্মি')
         ->assertJsonPath('data.social_links.facebook', 'https://facebook.com/acme');
 
     $setting = Setting::current();

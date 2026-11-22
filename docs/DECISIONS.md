@@ -70,3 +70,10 @@ Sign-out: `POST /v1/logout` revokes the access and refresh tokens, then the brow
 returns to `/signed-out`. Modules are config (`web/admin/src/modules.ts` -> `CrudPage`). Gaps: the sidebar has no icons; menu rows whose screen is
 not built yet (posts, messages, settings) land on the 404 page. Browser tests run in the `e2e` compose service (official Playwright image,
 profile `e2e`), not in the node container: Alpine's Chromium would not install reliably here.
+
+## 012 - Web app starter kit fork, PostgreSQL 18, English only
+2026-11-22. This kit starts from `gd-business-site-boilerplate` `main` at commit `3eade4d9a84283c96255ab7d7fc31b15d5c7f644` (the template base; read-only `upstream` remote, push disabled).
+MariaDB is replaced by PostgreSQL 18.6 (`pdo_pgsql`, `DB_CONNECTION=pgsql`, compose service `postgres`, test database `<POSTGRES_DB>_testing`).
+Cache, queue and sessions stay on the database drivers. The public portal, content modules, contact inbox and the second-language (`*_2nd`) columns are removed;
+the admin is English only. No Makefile: everything runs through `docker compose` and `sh scripts/*.sh` (final check: `sh scripts/check.sh`).
+Host ports use the 31xxx block so the kit can run next to the other starters (28xxx business site, 29xxx, 30xxx).

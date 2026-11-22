@@ -1,4 +1,4 @@
-/* Shared by both themes: things that should not differ between admin and portal. */
+/* Shared by both themes: things that should not differ between themes. */
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

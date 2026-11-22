@@ -15,7 +15,7 @@ read -r answer
 [ "$answer" = yes ] || { echo "restore: cancelled"; exit 1; }
 
 echo "restore: database"
-zcat "$dir/database.sql.gz" | $COMPOSE exec -T mariadb sh -c 'exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"'
+zcat "$dir/database.sql.gz" | $COMPOSE exec -T postgres sh -c 'exec psql -v ON_ERROR_STOP=1 -q -U "$POSTGRES_USER" "$POSTGRES_DB"' >/dev/null
 
 echo "restore: uploads"
 $COMPOSE exec -T php sh -c 'find "$UPLOADS_CONTAINER_PATH" -mindepth 1 -delete' </dev/null

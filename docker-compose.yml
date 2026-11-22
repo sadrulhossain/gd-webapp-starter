@@ -11,6 +11,7 @@ x-php: &php
   working_dir: /var/www/api
   volumes:
     - ./api:/var/www/api
+    - api-vendor:/var/www/api/vendor
     - ./docker/php/dev.ini:/usr/local/etc/php/conf.d/zz-dev.ini:ro
     - uploads-data:${UPLOADS_CONTAINER_PATH}
   environment: &php-env
@@ -26,19 +27,16 @@ x-php: &php
     - CACHE_STORE=database
     - SESSION_DRIVER=database
     - QUEUE_CONNECTION=database
-    - DB_CONNECTION=mariadb
-    - DB_HOST=mariadb
-    - DB_PORT=3306
-    - DB_DATABASE=${MARIADB_DATABASE}
-    - DB_USERNAME=${MARIADB_USER}
-    - DB_PASSWORD=${MARIADB_PASSWORD}
+    - DB_CONNECTION=pgsql
+    - DB_HOST=postgres
+    - DB_PORT=5432
+    - DB_DATABASE=${POSTGRES_DB}
+    - DB_USERNAME=${POSTGRES_USER}
+    - DB_PASSWORD=${POSTGRES_PASSWORD}
     - MAIL_HOST=mailpit
     - MAIL_PORT=1025
     - UPLOADS_CONTAINER_PATH=${UPLOADS_CONTAINER_PATH}
     - UPLOADS_MAX_MB=${UPLOADS_MAX_MB}
-    - PORTAL_REVALIDATE_URL=${PORTAL_REVALIDATE_URL:-}
-    - PORTAL_REVALIDATE_SECRET=${PORTAL_REVALIDATE_SECRET:-}
-    - CONTACT_NOTIFY_TO=${CONTACT_NOTIFY_TO:-}
 
 services:
   php:
@@ -51,7 +49,7 @@ services:
       timeout: 3s
       retries: 5
     depends_on:
-      mariadb: { condition: service_healthy }
+      postgres: { condition: service_healthy }
 
   php-queue:
     <<: *php
@@ -59,7 +57,7 @@ services:
     user: www-data
     command: ["artisan-or-idle.sh", "queue:work", "--sleep=3", "--tries=3"]
     depends_on:
-      mariadb: { condition: service_healthy }
+      postgres: { condition: service_healthy }
 
   php-scheduler:
     <<: *php
@@ -67,7 +65,7 @@ services:
     user: www-data
     command: ["artisan-or-idle.sh", "schedule:work"]
     depends_on:
-      mariadb: { condition: service_healthy }
+      postgres: { condition: service_healthy }
 
   node:
     image: node:${NODE_VERSION}-alpine
@@ -83,25 +81,19 @@ services:
       - PNPM_STORE_DIR=/app/node_modules/.pnpm-store
       - APP_DOMAIN=${APP_DOMAIN}
       - NGINX_HTTP_PORT=${NGINX_HTTP_PORT}
-      - PORTAL_DEV_PORT=${PORTAL_DEV_PORT}
       - ADMIN_DEV_PORT=${ADMIN_DEV_PORT}
       - OAUTH_ADMIN_CLIENT_ID=${OAUTH_ADMIN_CLIENT_ID}
-      # Portal server-side API calls go through nginx (api.<domain> is an alias of the nginx service on the compose network).
-      - API_INTERNAL_URL=${API_INTERNAL_URL:-http://api.${APP_DOMAIN}/api}
       - LOCALE_DEFAULT=${LOCALE_DEFAULT}
       - LOCALE_SUPPORTED=${LOCALE_SUPPORTED}
-      - PORTAL_REVALIDATE_SECRET=${PORTAL_REVALIDATE_SECRET:-}
-      - SITE_URL=${SITE_URL:-http://${APP_DOMAIN}:${NGINX_HTTP_PORT}}
       - PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
     volumes:
       - .:/app
       - root-node-modules:/app/node_modules
       - admin-node-modules:/app/web/admin/node_modules
-      - portal-node-modules:/app/web/portal/node_modules
       - api-types-node-modules:/app/packages/api-types/node_modules
       - api-client-node-modules:/app/packages/api-client/node_modules
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:$$ADMIN_DEV_PORT/ && wget -q -O /dev/null http://127.0.0.1:$$PORTAL_DEV_PORT/"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:$$ADMIN_DEV_PORT/"]
       interval: 5s
       timeout: 5s
       retries: 60
@@ -120,7 +112,6 @@ services:
       - .:/app
       - root-node-modules:/app/node_modules
       - admin-node-modules:/app/web/admin/node_modules
-      - portal-node-modules:/app/web/portal/node_modules
       - api-types-node-modules:/app/packages/api-types/node_modules
       - api-client-node-modules:/app/packages/api-client/node_modules
 
@@ -130,7 +121,6 @@ services:
     restart: unless-stopped
     environment:
       - APP_DOMAIN=${APP_DOMAIN}
-      - PORTAL_DEV_PORT=${PORTAL_DEV_PORT}
       - ADMIN_DEV_PORT=${ADMIN_DEV_PORT}
       - UPLOADS_CONTAINER_PATH=${UPLOADS_CONTAINER_PATH}
       - UPLOADS_MAX_MB=${UPLOADS_MAX_MB}
@@ -155,21 +145,20 @@ services:
       - php
       - node
 
-  mariadb:
-    image: mariadb:${MARIADB_VERSION}
-    container_name: ${COMPOSE_PROJECT_NAME}-mariadb
+  postgres:
+    image: postgres:${POSTGRES_VERSION}-alpine
+    container_name: ${COMPOSE_PROJECT_NAME}-postgres
     restart: unless-stopped
     environment:
-      - MARIADB_DATABASE=${MARIADB_DATABASE}
-      - MARIADB_USER=${MARIADB_USER}
-      - MARIADB_PASSWORD=${MARIADB_PASSWORD}
-      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - "127.0.0.1:${MARIADB_PORT}:3306"
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
     volumes:
-      - mariadb-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -189,10 +178,10 @@ services:
       retries: 5
 
 volumes:
-  mariadb-data:
+  api-vendor:
+  postgres-data:
   root-node-modules:
   admin-node-modules:
-  portal-node-modules:
   api-types-node-modules:
   api-client-node-modules:
   uploads-data:

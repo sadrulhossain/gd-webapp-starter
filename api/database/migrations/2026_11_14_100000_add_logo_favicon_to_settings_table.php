@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->string('logo')->nullable()->after('tagline_2nd');
+            $table->string('logo')->nullable()->after('tagline');
             $table->string('favicon')->nullable()->after('logo');
         });
     }
