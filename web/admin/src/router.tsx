@@ -4,6 +4,7 @@ import { RequireAuth, RequirePermission } from './auth/guards'
 import { CrudPage, type CrudConfig } from './components/CrudPage'
 import { AppShell } from './layout/AppShell'
 import { modules } from './modules'
+import { AuditLogPage } from './pages/AuditLog'
 import { Callback, SignedOut } from './pages/auth'
 import { Home } from './pages/Home'
 import { NotFound } from './pages/errors'
@@ -50,6 +51,14 @@ export const router = createBrowserRouter([
         element: (
           <RequirePermission permission={`${settings.key}.view`}>
             <SettingsPage config={settings} />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'audit-log',
+        element: (
+          <RequirePermission permission="audit.view">
+            <AuditLogPage />
           </RequirePermission>
         ),
       },
