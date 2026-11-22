@@ -68,14 +68,14 @@ export const settings: SingletonConfig = {
       id: 'general',
       label: 'General',
       images: [
-        { name: 'logo', preview: 'max-h-24', label: 'Site logo', hint: 'Shown in the portal header and footer and in this admin. JPEG, PNG or WebP; a wide transparent PNG works best. Until you upload one, the built-in logo is shown.' },
+        { name: 'logo', preview: 'max-h-24', label: 'Site logo', hint: 'Shown in this admin and wherever the site name is displayed. JPEG, PNG or WebP; a wide transparent PNG works best. Until you upload one, the built-in logo is shown.' },
         { name: 'favicon', preview: 'size-16', label: 'Favicon', hint: 'The small icon in the browser tab. An .ico or a square PNG (at least 64 x 64 px). Until you upload one, the built-in icon is shown.', ico: true },
       ],
       fields: [
         { name: 'site_name', label: 'Site name', required: true },
         { name: 'tagline', label: 'Tagline' },
         { name: 'currency', label: 'Currency code', hint: 'For example USD, EUR or BDT.' },
-        { name: 'currency_symbol', label: 'Currency symbol', hint: 'Shown before every price on the site, for example $, € or ৳.' },
+        { name: 'currency_symbol', label: 'Currency symbol', hint: 'Shown before amounts, for example $, € or ৳.' },
       ],
     },
     {
@@ -104,7 +104,7 @@ export const settings: SingletonConfig = {
   ],
 }
 
-/** The landing-page hero: its own screen (permissions hero.view / hero.update) over the hero section row. */
+/** The API keys the form owns (the top-level part of each field path). */
 export function settingsKeys(config: SingletonConfig): string[] {
   const keys = config.tabs.flatMap((tab) => tab.fields).flatMap((f) => [f.name.split('.')[0]!, ...(f.bilingual ? [`${f.name}_2nd`] : [])])
 

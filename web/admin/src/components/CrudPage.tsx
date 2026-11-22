@@ -16,6 +16,18 @@ import { IconButton } from './IconButton'
 
 export type Row = Record<string, unknown> & { id: number }
 
+/** An extra button on each row (suspend, sign out...). Shown when the user holds `permission` and `show` allows the row. */
+export interface RowAction {
+  label: string
+  icon: string
+  permission: string
+  show?: (row: Row) => boolean
+  /** Asked before running; omit to run at once. */
+  confirm?: (row: Row) => string
+  run: (row: Row) => Promise<unknown>
+  done?: string
+}
+
 export interface CrudField {
   name: string
   label: string
@@ -26,7 +38,9 @@ export interface CrudField {
   hint?: string
   options?: FieldOption[]
   /** Options fetched from the API instead (roles for a user, permissions for a role); `map` turns one item of `data` into an option. */
-  optionsFrom?: { endpoint: string; map: (item: never) => FieldOption }
+  optionsFrom?: { endpoint: string; map: (item: never) => FieldOption; /** Keeps only some of the fetched items. */ filter?: (item: never) => boolean }
+  /** Field is shown (and sent) only when this returns true; `row` is null on create. */
+  when?: (values: Record<string, unknown>, row: Row | null) => boolean
   /** Starting value on create. */
   initial?: unknown
 }
@@ -50,6 +64,10 @@ export interface CrudConfig {
   /** Seeded, edit-only modules (sections) turn these off. */
   canCreate?: boolean
   canDelete?: boolean
+  /** Per-row refinements of the permission checks (a superadmin row is not editable, a seeded menu row not deletable). */
+  rowCanEdit?: (row: Row) => boolean
+  rowCanDelete?: (row: Row) => boolean
+  rowActions?: RowAction[]
   /**
    * Rows become draggable. Dropping sends the new order of the rows sharing `group` (all rows when omitted) as
    * `PUT endpoint {ids}`. Needs `${key}.update`.
@@ -72,6 +90,7 @@ export function CrudPage({ config }: { config: CrudConfig }) {
   const [page, setPage] = useState(1)
   const [editing, setEditing] = useState<Row | 'new' | null>(null)
   const [deleting, setDeleting] = useState<Row | null>(null)
+  const [acting, setActing] = useState<{ action: RowAction; row: Row } | null>(null)
 
   const canCreate = config.canCreate !== false && can(`${config.key}.create`)
   const canUpdate = can(`${config.key}.update`)
@@ -114,13 +133,31 @@ export function CrudPage({ config }: { config: CrudConfig }) {
     onError: () => toast.error(`Could not delete the ${config.noun.toLowerCase()}`),
   })
 
+  const act = useMutation({
+    mutationFn: ({ action, row }: { action: RowAction; row: Row }) => action.run(row),
+    onSuccess: (_, { action }) => {
+      toast.success(action.done ?? `${action.label} done`)
+      setActing(null)
+      void refresh()
+    },
+    onError: (error, { action }) => {
+      setActing(null)
+      toast.error(error instanceof ApiError && error.status === 403 ? "You are not allowed to do that" : `Could not ${action.label.toLowerCase()}`)
+    },
+  })
+  const runAction = (action: RowAction, row: Row) => (action.confirm ? setActing({ action, row }) : act.mutate({ action, row }))
+  const visibleActions = (row: Row) => (config.rowActions ?? []).filter((a) => can(a.permission) && (a.show?.(row) ?? true))
+
   const meta = list.data?.meta
   const actions = (row: Row): ReactNode => (
     <span className="inline-flex gap-2">
-      {canUpdate && (
+      {visibleActions(row).map((a) => (
+        <IconButton key={a.label} variant="row" icon={a.icon} label={a.label} onClick={() => runAction(a, row)} />
+      ))}
+      {canUpdate && (config.rowCanEdit?.(row) ?? true) && (
         <IconButton variant="row" icon="pencil" label="Edit" onClick={() => setEditing(row)} />
       )}
-      {canDelete && (
+      {canDelete && (config.rowCanDelete?.(row) ?? true) && (
         <IconButton variant="row-danger" icon="trash" label="Delete" onClick={() => setDeleting(row)} />
       )}
     </span>
@@ -145,7 +182,7 @@ export function CrudPage({ config }: { config: CrudConfig }) {
           rows={rows}
           rowKey={(r) => r.id}
           loading={list.isPending}
-          actions={canUpdate || canDelete ? actions : undefined}
+          actions={canUpdate || canDelete || (config.rowActions?.length ?? 0) > 0 ? actions : undefined}
           onDropRow={config.reorder && canUpdate ? onDropRow : undefined}
         />
       )}
@@ -176,6 +213,16 @@ export function CrudPage({ config }: { config: CrudConfig }) {
       </Modal>
 
       <ConfirmDialog
+        open={acting !== null}
+        title={acting?.action.label ?? ""}
+        message={acting ? (acting.action.confirm?.(acting.row) ?? "") : ""}
+        confirmLabel={acting?.action.label ?? "Confirm"}
+        busy={act.isPending}
+        onConfirm={() => acting && act.mutate(acting)}
+        onCancel={() => setActing(null)}
+      />
+
+      <ConfirmDialog
         open={deleting !== null}
         title={`Delete ${config.noun.toLowerCase()}`}
         message={`Delete ${deleting && config.rowLabel ? `"${config.rowLabel(deleting)}"` : `this ${config.noun.toLowerCase()}`}? This cannot be undone.`}
@@ -194,12 +241,13 @@ function CrudForm({ config, row, onDone, onCancel }: { config: CrudConfig; row: 
   const [values, setValues] = useState<Record<string, unknown>>(() => ({ ...blank(config.fields), ...(row ?? {}) }))
   const [errors, setErrors] = useState<Record<string, string>>({})
   const set = (name: string, value: unknown) => setValues((v) => ({ ...v, [name]: value }))
+  const visible = config.fields.filter((f) => !f.when || f.when(values, row))
 
   const save = useMutation({
     mutationFn: () =>
       row
-        ? api.request('PATCH', `${config.endpoint}/${row.id}`, { body: payload(config.fields, values) })
-        : api.request('POST', config.endpoint, { body: payload(config.fields, values) }),
+        ? api.request('PATCH', `${config.endpoint}/${row.id}`, { body: payload(visible, values) })
+        : api.request('POST', config.endpoint, { body: payload(visible, values) }),
     onSuccess: () => {
       toast.success(`${config.noun} saved`)
       onDone()
@@ -220,7 +268,7 @@ function CrudForm({ config, row, onDone, onCancel }: { config: CrudConfig; row: 
         save.mutate()
       }}
     >
-      {config.fields.map((f) =>
+      {visible.map((f) =>
         f.bilingual ? (
           <BilingualField
             key={f.name}
@@ -257,7 +305,7 @@ function OptionsField({ field, value, error, onChange }: { field: CrudField; val
     queryKey: ['options', remote?.endpoint],
     enabled: remote !== undefined,
     staleTime: 60_000,
-    queryFn: async () => ((await api.request('GET', remote!.endpoint)) as { data: never[] }).data.map(remote!.map),
+    queryFn: async () => ((await api.request('GET', remote!.endpoint)) as { data: never[] }).data.filter(remote!.filter ?? (() => true)).map(remote!.map),
   })
 
   return (
