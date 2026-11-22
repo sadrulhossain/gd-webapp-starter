@@ -19,6 +19,8 @@ class UserResource extends JsonResource
             // The superadmin role is not assignable here, so it is left out of the editable list.
             'roles' => $this->roles->pluck('name')->reject(fn ($n) => $n === config('access.superadmin_role'))->values(),
             'is_superadmin' => $this->isSuperadmin(),
+            'status' => $this->isSuspended() ? 'suspended' : 'active',
+            'suspended_at' => $this->suspended_at,
             'created_at' => $this->created_at,
         ];
     }

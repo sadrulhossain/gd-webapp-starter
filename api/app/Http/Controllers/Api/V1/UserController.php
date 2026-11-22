@@ -59,6 +59,10 @@ class UserController extends Controller
 
         $user->update($fields);
 
+        if (isset($fields['password'])) {
+            $user->revokeSessions();
+        }
+
         if (array_key_exists('roles', $data)) {
             $keep = $user->isSuperadmin() ? [config('access.superadmin_role')] : [];
             $user->syncRoles([...$data['roles'], ...$keep]);

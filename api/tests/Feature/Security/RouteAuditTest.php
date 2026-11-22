@@ -32,7 +32,7 @@ it('answers 401 to anonymous callers on every authenticated route, before any mo
 it('answers 403 to a signed-in user without permissions on every collection route', function () {
     actingAsRole('nobody');
     // Own-account routes are open to every signed-in user by design.
-    $open = ['GET api/v1/me', 'PATCH api/v1/me', 'GET api/v1/me/menus', 'POST api/v1/logout'];
+    $open = ['GET api/v1/me', 'PATCH api/v1/me', 'GET api/v1/me/menus', 'GET api/v1/me/sessions', 'POST api/v1/logout'];
     $checked = 0;
 
     foreach (guardedRoutes() as $label => $uri) {
