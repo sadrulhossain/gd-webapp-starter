@@ -99,7 +99,21 @@ singleton reference: Settings. Paths below are relative to `api/app` unless note
 - Production lives in `docker-compose.prod.yml` + `docker/prod/` + `.env.prod`, never in the dev compose file. Images contain the code; nothing is bind-mounted except TLS certs. Do not publish ports other than 80/443.
 - A new env variable: add it to the `x-php` (or service) `environment:` in the prod file, to `.env.prod.example` and to the production table in ENV.md. Required secrets use `${VAR:?message}`.
 - A new service needs `restart: always`, a `healthcheck`, the `logging` anchor and a `depends_on` with `condition: service_healthy`.
-- The portal builds on first container start (it needs the API); bump `IMAGE_ID` per release. The php entrypoint migrates and caches config; seeders are run by hand (UPGRADE.md).
+- The php entrypoint migrates and caches config; seeders are run by hand (UPGRADE.md).
 - Backups: `scripts/backup.sh` / `restore.sh`. Anything new that holds state (a volume) must be added to both.
 
 > The business-site portal and content-module sections of this file were removed in W0 (English only, API plus admin). The admin is English only: ignore any remaining `bilingual` / `?lang=` notes.
+
+## Starter patterns (phases W1 to W8)
+- **Scaffold a module**: `php artisan make:module Product` writes the model (with `Auditable`), migration, policy, requests, resource, controller, menu seeder and a test file, and registers
+  permissions (`config/permissions.php`), routes (`routes/api.php`) and the seeder (`DatabaseSeeder`) at the `// <make:module ...>` markers. Run `pint`, `migrate`, `permissions:sync`, then the new tests.
+- **Permissions** exist only in `config/permissions.php` (`modules` and default `grants`); `permissions:sync` applies them (`--prune` removes undeclared ones). A role can only receive permissions its editor holds.
+- **Settings** exist only in `config/settings.php`: key, type, default, `rules`, `nested` rules, `public`. Read with `App\Support\Settings::get('key')`; write with `Settings::set([...])`.
+  `secret` settings are encrypted, write-only and never public. Defaults are read from config until a value is stored, so there is nothing to seed.
+- **Audit**: models use `App\Models\Concerns\Auditable`. Writes that skip model events (bulk updates, pivot syncs) call `App\Support\Audit::record($event, $subject, $old, $new)`.
+  Sensitive attribute names are listed in `config/audit.php`; a model can add more with `auditRedacted(): array`. The table is append-only (model and database trigger).
+- **Menus** are rows. A module seeder adds them; an admin can hide any row and add custom links (`menus.create`). A custom link names a permission the creator holds.
+- **Rate limits** (`AppServiceProvider`): `api` 300 a minute per account on the signed-in group, `public` 60 a minute per address for anonymous reads, `login` 10 a minute per address and email.
+  A new anonymous route joins the `public` group in `routes/api.php`.
+- **Admin screens**: a CRUD module is one entry in `web/admin/src/modules.tsx`. `rowActions` add buttons per row, `rowCanEdit` / `rowCanDelete` refine permissions per row, a field's `when` hides it
+  (and keeps it out of the request), `optionsFrom.filter` narrows fetched options. Pages that are not CRUD (audit log, settings) get their own route in `router.tsx`.

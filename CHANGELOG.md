@@ -3,6 +3,33 @@
 Format: [Keep a Changelog](https://keepachangelog.com), versions follow [SemVer](https://semver.org).
 Each entry lists new environment variables and seeders to run, because upgrades need them (see docs/UPGRADE.md).
 
+## [2.0.0] - 2026-11-22
+
+The starter: the business-site content, the portal and MariaDB are gone; the base is a Laravel API and a React admin on PostgreSQL.
+
+### Added
+- **Users**: status (active, suspended), session list and sign-out everywhere, own-profile and password routes, superadmin protection (cannot be deleted, suspended or edited; the last active one is protected).
+- **Roles and permissions**: permissions declared only in `config/permissions.php` and applied with `php artisan permissions:sync`; no escalation (you grant only what you hold); a test fails on any admin route without a permission check.
+- **Menus**: menus as data, hide and show, custom entries (`menus.create`, `menus.delete`), reorder.
+- **Settings**: declared in `config/settings.php` (type, default, validation, public flag); secrets are encrypted and write-only; key/value storage.
+- **Audit log**: append-only (model and database trigger), `Auditable` trait, redaction of sensitive values, `GET /api/v1/audit-logs` with filters (`audit.view`).
+- **make:module**: `php artisan make:module Name` scaffolds a module with permissions, policy, menu entry, audit and tests.
+- **Admin**: permission-aware shell and landing page, per-user menu cache, screens for users (suspend, reactivate, sign out everywhere), roles, menus, settings and the audit log.
+- **Hardening**: rate limits on the signed-in API (300/min per account) and anonymous reads (60/min per address); review in docs/SECURITY.md.
+
+### Changed
+- Database: PostgreSQL 18 (cache, sessions and queue use it). Backups use `pg_dump`.
+- `GET /api/v1/public/settings` returns only settings flagged public.
+- The `settings` table is replaced by `setting_values` (key/value); the migration copies the existing row.
+- Docs (DEPLOY, ENV, UPGRADE, PATTERNS) rewritten for the API and admin stack. `IMAGE_ID` was removed from `.env.prod.example` (it belonged to the portal).
+
+### Notes
+- Upgrading from the business-site release is not supported; start from this version.
+- New environment variables: none. After deploying run `php artisan permissions:sync` and `php artisan db:seed --force` (adds the Audit log menu entry and new permissions).
+- Known limits: the dev CSP still allows inline scripts (SECURITY.md finding 5); the audit log has no purge.
+
+[2.0.0]: https://github.com/sadrulhossain/gd-webapp-starter/releases/tag/v2.0.0
+
 ## [1.0.0] - 2026-11-13
 
 First release.

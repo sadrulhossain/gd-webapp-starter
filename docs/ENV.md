@@ -8,23 +8,18 @@ each service lists its own `environment:` (no `env_file`). Commit only `*.exampl
 | COMPOSE_PROJECT_NAME | compose | gd-webapp-starter | container names are `${COMPOSE_PROJECT_NAME}-<tech>` |
 | COMPOSE_PROFILES | compose | dev | `dev` enables mailpit |
 | APP_ENV | php* | local | |
-| APP_DOMAIN | nginx, node, php* | gd-webapp-starter.localhost | portal = APP_DOMAIN, `admin.` and `api.` subdomains |
+| APP_DOMAIN | nginx, node, php* | gd-webapp-starter.localhost | `admin.` and `api.` subdomains (production also redirects the bare domain to the admin) |
 | PHP_VERSION, LARAVEL_VERSION, COMPOSER_VERSION, NODE_VERSION, NGINX_VERSION, POSTGRES_VERSION, MAILPIT_VERSION, VITE_VERSION, REACT_VERSION | compose build/images, the version check (docs/VERSIONS.md) | see docs/VERSIONS.md | must match VERSIONS.md |
 | NGINX_HTTP_PORT | nginx | 31080 | published on all interfaces |
-| POSTGRES_PORT | mariadb | 28306 | bound to 127.0.0.1 |
+| POSTGRES_PORT | postgres | 28306 | bound to 127.0.0.1 |
 | MAILPIT_SMTP_PORT / MAILPIT_UI_PORT | mailpit | 31025 / 31026 | bound to 127.0.0.1 |
-| PORTAL_DEV_PORT / ADMIN_DEV_PORT | node, nginx | 28300 / 31301 | not published; nginx proxies to them |
+| ADMIN_DEV_PORT | node, nginx | 31301 | not published; nginx proxies to them |
 | POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD | postgres, php* | gd_webapp_starter / gd_webapp_starter / change-me | php gets them as DB_DATABASE / DB_USERNAME / DB_PASSWORD; tests use `<POSTGRES_DB>_testing` |
 | UPLOADS_CONTAINER_PATH | php*, nginx, Dockerfile | /var/www/uploads | disk root and volume mount point; nginx serves `/uploads/` |
 | UPLOADS_MAX_MB | php*, nginx | 5 | validation, php.ini upload limits and nginx `client_max_body_size` |
 | CORS_ALLOWED_ORIGINS | php | empty (closed) | comma separated exact origins allowed to call the API from a browser; credentials are never allowed |
-| TRUSTED_PROXY_CIDR | nginx | 172.16.0.0/12 | the only source whose `X-Forwarded-For` the api vhost believes (`set_real_ip_from`), so throttles see the visitor, not the portal. Production: the portal/load-balancer range only |
-| SITE_URL | node (portal) | http://${APP_DOMAIN}:${NGINX_HTTP_PORT} | public origin of the portal: canonical, hreflang, Open Graph, sitemap.xml, robots.txt, JSON-LD. Set it to the real https origin in production |
-| API_INTERNAL_URL | node (portal) | http://api.${APP_DOMAIN}/api | where the portal's server reaches the API inside compose (nginx answers to the `api.` alias); never exposed to the browser |
-| LOCALE_DEFAULT / LOCALE_SUPPORTED | also node (portal) | | the portal derives its locales from these: default has no URL prefix, the first other supported locale is served at `/<code>` |
-| PORTAL_REVALIDATE_URL / PORTAL_REVALIDATE_SECRET | php*, node (secret) | empty / change-me | content changes queue a signed POST of `{"tags":[...]}` to the URL; headers `X-Webhook-Timestamp`, `X-Webhook-Signature: sha256=hmac(secret, "<timestamp>.<body>")`. Empty URL disables it |
+| TRUSTED_PROXY_CIDR | nginx | 172.16.0.0/12 | the only source whose `X-Forwarded-For` the api vhost believes (`set_real_ip_from`), so throttles see the visitor, not the proxy. Production: the load-balancer range only |
 | OAUTH_ADMIN_CLIENT_ID | node (admin SPA) | fixed UUID | public PKCE client id; must equal `OAUTH_ADMIN_CLIENT_ID` in `api/.env` (the redirect URI is `<admin origin>/auth/callback`) |
-| CONTACT_NOTIFY_TO | php* | empty | contact form notification recipient when Settings has no email |
 
 | APP_DEBUG | php* | true | |
 | APP_KEY | php* | set by hand (`openssl rand -base64 32`, prefixed `base64:`) | `base64:` 32 bytes |
@@ -41,18 +36,16 @@ Template: `.env.prod.example`.
 
 | Variable | Used by | Notes |
 |----------|---------|-------|
-| COMPOSE_PROJECT_NAME, APP_NAME, APP_DOMAIN | all | `APP_DOMAIN` is the portal host; `admin.` and `api.` subdomains are derived from it |
+| COMPOSE_PROJECT_NAME, APP_NAME, APP_DOMAIN | all | `APP_DOMAIN` is the bare domain; `admin.` and `api.` subdomains are derived from it |
 | APP_KEY | php* | required; `base64:` + 32 random bytes; keep a copy outside the server |
 | HTTP_PORT / HTTPS_PORT | nginx | published ports, default 80 / 443. The only published ports of the stack |
 | TLS_CERT_DIR | nginx | host directory with `fullchain.pem` and `privkey.pem`, mounted read-only; one certificate for the three names |
-| IMAGE_ID | portal | any string that changes per release; the portal rebuilds its site when it differs from the one it built last |
 | POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD | postgres, php* | passwords required; the database is not published |
 | UPLOADS_CONTAINER_PATH / UPLOADS_MAX_MB | php*, nginx | uploads volume mount path (same in all three) and size limit |
 | SUPERADMIN_NAME / SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD | php* | read by the seeder; email and password required |
 | OAUTH_ADMIN_CLIENT_ID | php*, nginx build | public PKCE client id, baked into the admin build; the redirect URI is derived (`https://admin.<domain>/auth/callback`) |
-| MAIL_MAILER / MAIL_HOST / MAIL_PORT / MAIL_SCHEME / MAIL_USERNAME / MAIL_PASSWORD / MAIL_FROM_ADDRESS | php* | outgoing mail for contact notifications (`MAIL_MAILER=log` disables sending) |
+| MAIL_MAILER / MAIL_HOST / MAIL_PORT / MAIL_SCHEME / MAIL_USERNAME / MAIL_PASSWORD / MAIL_FROM_ADDRESS | php* | outgoing mail (`MAIL_MAILER=log` writes to the log instead of sending) |
 | LOG_LEVEL | php* | default `warning`; logs go to the container's stderr (rotated, 3 x 10 MB) |
-| PORTAL_REVALIDATE_SECRET | php*, portal | required; the URL is fixed to `http://portal:3000/api/revalidate` |
 | CORS_ALLOWED_ORIGINS, TRUSTED_PROXY_CIDR | php*, nginx | see the dev table above and docs/SECURITY.md |
 
-Set by compose, not by you: `APP_ENV=production`, `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, `API_INTERNAL_URL=http://nginx:8080/api`, `SITE_URL=https://<APP_DOMAIN>`, cache/session/queue on the database.
+Set by compose, not by you: `APP_ENV=production`, `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, cache/session/queue on the database.

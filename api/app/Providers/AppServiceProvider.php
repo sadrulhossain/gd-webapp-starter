@@ -36,6 +36,10 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(10)->by($request->ip().'|'.strtolower((string) $request->input('email'))));
 
+        // Signed-in API calls are limited per account, anonymous reads per address (the api vhost passes the real client address on).
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(300)->by($request->user()?->getAuthIdentifier() ?? $request->ip()));
+        RateLimiter::for('public', fn (Request $request) => Limit::perMinute(60)->by($request->ip()));
+
         Gate::policy(Role::class, RolePolicy::class);
 
         // Superadmin passes every gate check (permissions, policies, can: middleware).
