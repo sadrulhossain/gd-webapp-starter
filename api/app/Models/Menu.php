@@ -11,9 +11,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * One navigation entry. `permission_name` null means a group that is shown
  * only when at least one child is visible.
  */
-#[Fillable(['parent_id', 'permission_name', 'title', 'sort', 'icon', 'path'])]
+#[Fillable(['parent_id', 'permission_name', 'title', 'sort', 'icon', 'path', 'active', 'custom'])]
 class Menu extends Model
 {
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return ['active' => 'boolean', 'custom' => 'boolean'];
+    }
+
     /** @return BelongsTo<Menu, $this> */
     public function parent(): BelongsTo
     {

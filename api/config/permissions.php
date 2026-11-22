@@ -31,7 +31,9 @@ return [
         ],
         'menus' => [
             'view' => 'View the menu tree',
+            'create' => 'Add custom menu entries',
             'update' => 'Edit and reorder menus',
+            'delete' => 'Delete custom menu entries',
         ],
         'settings' => [
             'view' => 'View settings',

@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\ReorderMenusRequest;
+use App\Http\Requests\Api\V1\StoreMenuRequest;
 use App\Http\Requests\Api\V1\UpdateMenuRequest;
 use App\Http\Resources\Api\V1\MenuResource;
 use App\Models\Menu;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -36,6 +38,36 @@ class MenuController extends Controller
         $walk(0, 0);
 
         return MenuResource::collection(collect($rows));
+    }
+
+    /** Add a custom menu entry (a group, or a link guarded by a permission) */
+    public function store(StoreMenuRequest $request): JsonResponse
+    {
+        $menu = Menu::query()->create([
+            ...$request->validated(),
+            'custom' => true,
+            'sort' => ((int) Menu::query()->where('parent_id', $request->validated('parent_id'))->max('sort')) + 10,
+        ]);
+
+        return (new MenuResource($menu->refresh()))->response()->setStatusCode(201);
+    }
+
+    /** Delete a custom menu entry; seeded entries and groups that still have children are refused */
+    public function destroy(Menu $menu): Response
+    {
+        Gate::authorize('delete', $menu);
+
+        if (! $menu->custom) {
+            throw ValidationException::withMessages(['menu' => 'Seeded menu entries cannot be deleted; hide them instead.']);
+        }
+
+        if ($menu->children()->exists()) {
+            throw ValidationException::withMessages(['menu' => 'Delete or move the entries inside this group first.']);
+        }
+
+        $menu->delete();
+
+        return response()->noContent();
     }
 
     /** Update a menu entry's title or icon */

@@ -35,6 +35,10 @@ final class MenuTree
         $items = [];
 
         foreach ($byParent->get($parentId, collect()) as $menu) {
+            if (! $menu->active) {
+                continue;
+            }
+
             $children = self::branch($user, $byParent, $menu->id);
 
             $visible = $menu->permission_name === null

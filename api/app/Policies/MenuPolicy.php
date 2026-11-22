@@ -12,6 +12,16 @@ class MenuPolicy
         return $user->checkPermissionTo('menus.view');
     }
 
+    public function create(User $user): bool
+    {
+        return $user->checkPermissionTo('menus.create');
+    }
+
+    public function delete(User $user, ?Menu $menu = null): bool
+    {
+        return $user->checkPermissionTo('menus.delete');
+    }
+
     public function update(User $user, ?Menu $menu = null): bool
     {
         return $user->checkPermissionTo('menus.update');
