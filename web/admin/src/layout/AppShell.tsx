@@ -1,7 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
-import { api } from '../api'
 import { signOut } from '../auth/signOut'
 import { useAuth } from '../auth/store'
 import { Brand } from '../components/Brand'
@@ -9,12 +7,13 @@ import { Icon } from '../components/Icon'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { ToastHost } from '../components/Toast'
 import { useFavicon } from '../lib/branding'
+import { useMenus } from '../lib/menus'
 import type { MenuItem } from '../types'
 
 const navLink = 'flex items-center gap-3 rounded-lg px-3 py-2 font-medium text-sidebar-text transition-colors hover:bg-white/30 dark:hover:bg-white/10'
 const navActive = '!bg-primary-600 !text-white shadow-md'
 
-const GROUP_ICONS: Record<string, string> = { content: 'layers', access: 'shield', blog: 'file-text' }
+const GROUP_ICONS: Record<string, string> = { modules: 'layers', access: 'shield' }
 
 function findGroup(items: MenuItem[], id: number): MenuItem | undefined {
   for (const item of items) {
@@ -137,10 +136,7 @@ function UserMenu() {
 
 /** Glass sidebar (from /me/menus, already filtered by permission), top bar and the routed page. */
 export function AppShell() {
-  const menus = useQuery({
-    queryKey: ['menus'],
-    queryFn: async () => ((await api.request('GET', '/v1/me/menus')) as { data: MenuItem[] }).data,
-  })
+  const menus = useMenus()
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem('admin-sidebar') === 'collapsed'
@@ -211,6 +207,20 @@ export function AppShell() {
           </div>
 
           <nav aria-label="Main navigation" className="nav-scroll -mx-1 mt-3 flex-1 overflow-y-auto px-1">
+            {menus.isPending && (
+              <p role="status" className="px-3 py-2 text-sm text-sidebar-text">
+                {slim ? '...' : 'Loading menu...'}
+              </p>
+            )}
+            {menus.isError && (
+              <div role="alert" className="px-3 py-2 text-sm text-sidebar-text">
+                {!slim && <p>The menu could not be loaded.</p>}
+                <button type="button" className="underline" onClick={() => void menus.refetch()}>
+                  Retry
+                </button>
+              </div>
+            )}
+            {menus.isSuccess && menus.data.length === 0 && !slim && <p className="px-3 py-2 text-sm text-sidebar-text">No sections available.</p>}
             <ul className="space-y-1 pb-4">{menus.data?.map((item) => <MenuNode key={item.id} item={item} collapsed={slim} open={isOpen} onToggle={toggleGroup} />)}</ul>
           </nav>
 

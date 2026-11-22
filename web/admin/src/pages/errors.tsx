@@ -9,7 +9,7 @@ function Message({ code, title, text }: { code: number; title: string; text: str
       </h1>
       <p className="text-ink-muted">{text}</p>
       <Link to="/" className="inline-block text-link underline">
-        Back to the dashboard
+        Back to the start page
       </Link>
     </section>
   )

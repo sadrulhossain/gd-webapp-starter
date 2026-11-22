@@ -37,6 +37,6 @@ Each phase has its own branch `feature/phase-<no>-<task-name>`, merged manually 
 | [x] | W3 | Menus API | `feature/phase-w3-menus-api` |
 | [x] | W4 | Settings API | `feature/phase-w4-settings-api` |
 | [x] | W5 | Audit log and module scaffold | `feature/phase-w5-audit-log-module-scaffold` |
-| [ ] | W6 | Admin shell: sign-in, permission-aware layout, dynamic sidebar | `feature/phase-w6-admin-shell` |
+| [x] | W6 | Admin shell: sign-in, permission-aware layout, dynamic sidebar | `feature/phase-w6-admin-shell` |
 | [ ] | W7 | Admin screens: users, roles, menus, settings, audit log | `feature/phase-w7-admin-screens` |
 | [ ] | W8 | Hardening and release | `feature/phase-w8-hardening-release` |
