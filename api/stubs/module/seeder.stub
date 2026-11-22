@@ -1,0 +1,16 @@
+<?php
+
+namespace Database\Seeders;
+
+/** Permissions are declared in config/permissions.php; this adds the menu entry. */
+class {{Model}}ModuleSeeder extends ModuleSeeder
+{
+    protected function menus(): array
+    {
+        return [
+            ['title' => 'Modules', 'sort' => 50, 'children' => [
+                ['title' => '{{Title}}', 'permission' => '{{plural}}.view', 'path' => '/{{route}}', 'icon' => 'list', 'sort' => 10],
+            ]],
+        ];
+    }
+}

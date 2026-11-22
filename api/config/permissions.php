@@ -39,6 +39,10 @@ return [
             'view' => 'View settings',
             'update' => 'Edit settings',
         ],
+        'audit' => [
+            'view' => 'View the audit log',
+        ],
+        // <make:module permissions> new modules are added above this line
     ],
 
     /*

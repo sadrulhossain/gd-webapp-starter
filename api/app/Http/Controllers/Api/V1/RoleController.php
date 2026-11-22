@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreRoleRequest;
 use App\Http\Requests\Api\V1\UpdateRoleRequest;
 use App\Http\Resources\Api\V1\RoleResource;
+use App\Support\Audit;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
@@ -38,8 +39,10 @@ class RoleController extends Controller
     /** Create a role */
     public function store(StoreRoleRequest $request): RoleResource
     {
+        /** @var Role $role */
         $role = Role::create(['name' => $request->validated('name'), 'guard_name' => 'api']);
         $role->syncPermissions($request->validated('permissions', []));
+        Audit::record('created', $role, [], ['name' => $role->name, 'permissions' => $role->permissions->pluck('name')->sort()->values()->all()]);
 
         return new RoleResource($role->load('permissions'));
     }
@@ -52,6 +55,8 @@ class RoleController extends Controller
      */
     public function update(UpdateRoleRequest $request, Role $role): RoleResource
     {
+        $before = ['name' => $role->name, 'permissions' => $role->permissions->pluck('name')->sort()->values()->all()];
+
         if ($request->has('name')) {
             $role->update(['name' => $request->validated('name')]);
         }
@@ -63,6 +68,12 @@ class RoleController extends Controller
                 : $role->permissions->pluck('name')->diff($actor->getAllPermissions()->pluck('name'))->all();
 
             $role->syncPermissions([...$request->validated('permissions'), ...$keep]);
+        }
+
+        $after = ['name' => $role->name, 'permissions' => $role->load('permissions')->permissions->pluck('name')->sort()->values()->all()];
+
+        if ($before !== $after) {
+            Audit::record('updated', $role, $before, $after);
         }
 
         return new RoleResource($role->load('permissions')->loadCount('users'));
@@ -78,6 +89,7 @@ class RoleController extends Controller
         Gate::authorize('delete', $role);
         abort_if($role->users()->exists(), 409, 'This role is still assigned to users.');
         $role->delete();
+        Audit::record('deleted', $role, ['name' => $role->name]);
 
         return response()->noContent();
     }

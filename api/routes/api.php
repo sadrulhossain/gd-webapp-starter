@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\LocalesController;
@@ -52,5 +53,8 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('menus/{menu}', [MenuController::class, 'update']);
         Route::post('menus', [MenuController::class, 'store']);
         Route::delete('menus/{menu}', [MenuController::class, 'destroy']);
+        Route::apiResource('audit-logs', AuditLogController::class)->only(['index', 'show'])->parameters(['audit-logs' => 'auditLog'])->middleware('can:audit.view');
+
+        // <make:module routes> new modules register their routes above this line
     });
 });

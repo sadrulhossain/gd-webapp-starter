@@ -1,0 +1,47 @@
+<?php
+
+use App\Models\AuditLog;
+use App\Models\{{Model}};
+use Database\Seeders\{{Model}}ModuleSeeder;
+use Illuminate\Support\Facades\DB;
+
+it('requires authentication', function () {
+    $this->getJson('/api/v1/{{route}}')->assertUnauthorized();
+    $this->postJson('/api/v1/{{route}}', [])->assertUnauthorized();
+});
+
+it('forbids a user without permission', function () {
+    actingAsRole('nobody');
+    $item = {{Model}}::create(['name' => 'A']);
+
+    $this->getJson('/api/v1/{{route}}')->assertForbidden();
+    $this->getJson("/api/v1/{{route}}/{$item->id}")->assertForbidden();
+    $this->postJson('/api/v1/{{route}}', ['name' => 'B'])->assertForbidden();
+    $this->patchJson("/api/v1/{{route}}/{$item->id}", ['name' => 'B'])->assertForbidden();
+    $this->deleteJson("/api/v1/{{route}}/{$item->id}")->assertForbidden();
+});
+
+it('creates, shows, updates and deletes, and audits each change', function () {
+    actingAsRole('manager', ['{{plural}}.view', '{{plural}}.create', '{{plural}}.update', '{{plural}}.delete']);
+
+    $id = $this->postJson('/api/v1/{{route}}', ['name' => 'First'])->assertSuccessful()->assertJsonPath('data.name', 'First')->json('data.id');
+    $this->getJson('/api/v1/{{route}}')->assertOk()->assertJsonCount(1, 'data');
+    $this->getJson("/api/v1/{{route}}/{$id}")->assertOk();
+    $this->patchJson("/api/v1/{{route}}/{$id}", ['name' => 'Second'])->assertOk()->assertJsonPath('data.name', 'Second');
+    $this->deleteJson("/api/v1/{{route}}/{$id}")->assertNoContent();
+
+    expect(AuditLog::where('auditable_type', '{{Model}}')->orderBy('id')->pluck('event')->all())->toBe(['created', 'updated', 'deleted']);
+});
+
+it('rejects invalid input with the field keys', function () {
+    actingAsRole('manager', ['{{plural}}.create']);
+
+    $this->postJson('/api/v1/{{route}}', ['name' => ''])->assertUnprocessable()->assertJsonStructure(['error' => ['details' => ['name']]]);
+});
+
+it('seeds its menu entry idempotently', function () {
+    $this->seed({{Model}}ModuleSeeder::class);
+    $this->seed({{Model}}ModuleSeeder::class);
+
+    expect(DB::table('menus')->where('permission_name', '{{plural}}.view')->count())->toBe(1);
+});

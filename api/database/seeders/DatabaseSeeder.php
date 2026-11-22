@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
             DashboardModuleSeeder::class,
             SettingsModuleSeeder::class,
             AccessModuleSeeder::class,
+            AuditModuleSeeder::class,
+            // <make:module seeders> new module seeders are added above this line
             SuperadminSeeder::class,
             OauthClientSeeder::class,
         ]);
