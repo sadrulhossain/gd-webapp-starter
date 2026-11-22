@@ -7,12 +7,16 @@ use App\Http\Controllers\Api\V1\LogoutController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\MeMenusController;
 use App\Http\Controllers\Api\V1\MenuController;
+use App\Http\Controllers\Api\V1\MeSessionController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\SettingController;
 use App\Http\Controllers\Api\V1\SettingImageController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\UserSessionController;
+use App\Http\Controllers\Api\V1\UserStatusController;
+use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -21,10 +25,12 @@ Route::prefix('v1')->group(function (): void {
     Route::get('public/settings', [SettingController::class, 'publicShow']);
 
     // Authenticated routes. Module routes add ->middleware('can:<permission>').
-    Route::middleware('auth:api')->group(function (): void {
+    Route::middleware(['auth:api', EnsureUserIsActive::class])->group(function (): void {
         Route::get('me', MeController::class);
         Route::get('me/menus', MeMenusController::class);
         Route::patch('me', [ProfileController::class, 'update']);
+        Route::get('me/sessions', [MeSessionController::class, 'index']);
+        Route::delete('me/sessions/{session}', [MeSessionController::class, 'destroy']);
         Route::post('logout', LogoutController::class);
         Route::get('dashboard', DashboardController::class)->middleware('can:dashboard.view');
 
@@ -35,6 +41,9 @@ Route::prefix('v1')->group(function (): void {
         Route::apiSingleton('settings', SettingController::class);
 
         // Access: users, roles (+ the permission list for the matrix), menu tree
+        Route::patch('users/{user}/status', UserStatusController::class);
+        Route::get('users/{user}/sessions', [UserSessionController::class, 'index']);
+        Route::delete('users/{user}/sessions', [UserSessionController::class, 'destroy']);
         Route::apiResource('users', UserController::class);
         Route::apiResource('roles', RoleController::class);
         Route::get('permissions', PermissionController::class)->middleware('can:roles.view');

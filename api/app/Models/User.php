@@ -11,6 +11,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\Contracts\OAuthenticatable;
 use Laravel\Passport\HasApiTokens;
+use Laravel\Passport\RefreshToken;
+use Laravel\Passport\Token;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password'])]
@@ -32,8 +34,23 @@ class User extends Authenticatable implements OAuthenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'suspended_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
+    }
+
+    /** Revokes every access token (and its refresh tokens), optionally keeping one. */
+    public function revokeSessions(?string $exceptTokenId = null): void
+    {
+        $ids = $this->tokens()->when($exceptTokenId, fn ($q) => $q->where('id', '!=', $exceptTokenId))->pluck('id');
+
+        RefreshToken::query()->whereIn('access_token_id', $ids)->update(['revoked' => true]);
+        Token::query()->whereIn('id', $ids)->update(['revoked' => true]);
     }
 
     public function isSuperadmin(): bool

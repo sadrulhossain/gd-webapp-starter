@@ -27,11 +27,23 @@ class UserPolicy
         return $user->checkPermissionTo('users.update') && ($user->isSuperadmin() || ! $target->isSuperadmin());
     }
 
-    /** Nobody deletes their own account; only a superadmin deletes a superadmin. */
+    /** Nobody suspends themselves; a superadmin is never suspended. */
+    public function suspend(User $user, User $target): bool
+    {
+        return ($user->isSuperadmin() || $user->checkPermissionTo('users.update')) && $user->isNot($target) && ! $target->isSuperadmin();
+    }
+
+    /** Sessions of another account follow the update rule. */
+    public function manageSessions(User $user, User $target): bool
+    {
+        return $this->update($user, $target);
+    }
+
+    /** Nobody deletes their own account; a superadmin is never deleted. */
     public function delete(User $user, User $target): bool
     {
-        return $user->checkPermissionTo('users.delete')
+        return ($user->isSuperadmin() || $user->checkPermissionTo('users.delete'))
             && $user->isNot($target)
-            && ($user->isSuperadmin() || ! $target->isSuperadmin());
+            && ! $target->isSuperadmin();
     }
 }

@@ -26,7 +26,7 @@ class LoginController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::guard('web')->attempt($credentials)) {
+        if (! Auth::guard('web')->attempt([...$credentials, 'suspended_at' => null])) {
             return back()->withErrors(['email' => 'These credentials do not match our records.'])->onlyInput('email');
         }
 

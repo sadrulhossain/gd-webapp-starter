@@ -39,6 +39,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Role::class, RolePolicy::class);
 
         // Superadmin passes every gate check (permissions, policies, can: middleware).
-        Gate::before(fn (User $user) => $user->isSuperadmin() ? true : null);
+        // Deleting or suspending an account is the exception: UserPolicy protects superadmins from everyone, superadmins included.
+        Gate::before(fn (User $user, string $ability, array $args) => $user->isSuperadmin()
+            && ! (in_array($ability, ['delete', 'suspend'], true) && ($args[0] ?? null) instanceof User) ? true : null);
     }
 }

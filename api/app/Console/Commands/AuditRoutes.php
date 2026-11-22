@@ -25,6 +25,8 @@ class AuditRoutes extends Command
         'GET api/v1/me',
         'PATCH api/v1/me',
         'GET api/v1/me/menus',
+        'GET api/v1/me/sessions',
+        'DELETE api/v1/me/sessions/{session}',
         'POST api/v1/logout',
     ];
 
