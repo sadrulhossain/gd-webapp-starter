@@ -7,6 +7,7 @@ use App\Http\Requests\Api\V1\StoreSettingImageRequest;
 use App\Http\Resources\Api\V1\SettingResource;
 use App\Models\Setting;
 use App\Services\MediaService;
+use App\Support\Settings;
 use Illuminate\Support\Facades\Gate;
 
 class SettingImageController extends Controller
@@ -24,7 +25,7 @@ class SettingImageController extends Controller
     /** Remove the site logo */
     public function destroyLogo(MediaService $media): SettingResource
     {
-        Gate::authorize('update', Setting::current());
+        Gate::authorize('update', Setting::class);
 
         return $this->destroy($media, 'logo');
     }
@@ -42,29 +43,26 @@ class SettingImageController extends Controller
     /** Remove the favicon */
     public function destroyFavicon(MediaService $media): SettingResource
     {
-        Gate::authorize('update', Setting::current());
+        Gate::authorize('update', Setting::class);
 
         return $this->destroy($media, 'favicon');
     }
 
-    private function store(StoreSettingImageRequest $request, MediaService $media, string $column): SettingResource
+    private function store(StoreSettingImageRequest $request, MediaService $media, string $key): SettingResource
     {
-        $setting = Setting::current();
-        $previous = $setting->{$column};
+        $previous = Settings::get($key);
 
-        $setting->update([$column => $media->store($request->file('image'), 'site', allowIcon: $column === 'favicon')]);
+        Settings::set([$key => $media->store($request->file('image'), 'site', allowIcon: $key === 'favicon')]);
         $media->delete($previous);
 
-        return new SettingResource($setting);
+        return new SettingResource;
     }
 
-    private function destroy(MediaService $media, string $column): SettingResource
+    private function destroy(MediaService $media, string $key): SettingResource
     {
-        $setting = Setting::current();
+        $media->delete(Settings::get($key));
+        Settings::set([$key => null]);
 
-        $media->delete($setting->{$column});
-        $setting->update([$column => null]);
-
-        return new SettingResource($setting);
+        return new SettingResource;
     }
 }

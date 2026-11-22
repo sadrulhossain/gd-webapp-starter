@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Setting;
 use App\Models\User;
+use App\Support\Settings;
 use Database\Seeders\OauthClientSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -82,13 +82,13 @@ describe('uploads', function () {
             $upload($this, UploadedFile::fake()->createWithContent($name, $content))->assertStatus(422);
         }
 
-        expect(Setting::current()->logo)->toBeNull();
+        expect(Settings::get('logo'))->toBeNull();
     });
 
     it('stores a genuine image under a generated name, never the client one', function () use ($upload) {
         $upload($this, UploadedFile::fake()->image('../../evil.php.jpg', 100, 100))->assertOk();
 
-        $path = Setting::current()->logo;
+        $path = Settings::get('logo');
         expect($path)->not->toBeNull()->not->toContain('evil')->not->toContain('..');
         expect(collect(Storage::disk('uploads')->allFiles())->filter(fn ($f) => preg_match('/\.(php|phtml|phar|html?|svg)$/i', $f)))->toBeEmpty();
     });
